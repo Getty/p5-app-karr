@@ -1,0 +1,17 @@
+{{$NEXT}}
+
+    - Initial release
+    - Implemented archive command (soft-delete to archived status)
+    - Implemented handoff command (move to review with claim, note, block/release)
+    - Implemented config command (show/get/set board configuration)
+    - Implemented context command (generate markdown board summary for embedding)
+    - Implemented agent-name command (random two-word name generator)
+    - Implemented skill command (install/check/update/show agent skills)
+    - Added batch operations (comma-separated IDs) to move, edit, delete, archive
+    - Added --json output to all commands (show, move, edit, delete, archive, handoff, board, pick)
+    - Added --compact output to board command
+    - Renamed all Command packages to CamelCase
+    - Moved shared helpers (find_task, load_tasks, parse_ids) into BoardAccess role
+    - Added --claude-skill flag to init for installing Claude Code skill
+    - Ships skill via File::ShareDir (share/claude-skill.md)
+    - Extracted --json and --compact into App::karr::Role::Output

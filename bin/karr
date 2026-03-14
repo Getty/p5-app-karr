@@ -1,0 +1,9 @@
+#!/usr/bin/env perl
+# PODNAME: karr
+# ABSTRACT: Kanban Assignment & Responsibility Registry
+
+use strict;
+use warnings;
+use App::karr;
+
+App::karr->new_with_cmd;
