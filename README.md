@@ -4,9 +4,37 @@ A file-based kanban board CLI for multi-agent workflows. Perl reimplementation o
 
 ## Installation
 
+### Perl (local)
+
 ```bash
 cpanm App::karr
 ```
+
+### Docker
+
+```bash
+# Pull from GHCR
+docker run --rm -it -v $(pwd):/work raudssus/karr --help
+
+# Or use the latest tag
+docker run --rm -it -v $(pwd):/work raudssus/karr:latest --help
+```
+
+**Recommended: Add an alias to your shell:**
+
+```bash
+alias karr='docker run --rm -it -v $(pwd):/work raudssus/karr'
+```
+
+Now use `karr` as if it were installed locally:
+
+```bash
+karr init --name "My Project"
+karr create "Fix login bug" --priority high
+karr list
+```
+
+The `-v $(pwd):/work` mount ensures your `karr/` board directory is accessible inside the container.
 
 ## Quick start
 
