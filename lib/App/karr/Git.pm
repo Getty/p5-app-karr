@@ -37,6 +37,14 @@ sub git_user_name {
     return $name;
 }
 
+sub git_user_identity {
+    my ($self) = @_;
+    my $name = $self->git_user_name;
+    my $email = $self->git_user_email;
+    return "$name <$email>" if $name && $email;
+    return $email // $name // '';
+}
+
 sub read_ref {
     my ( $self, $ref ) = @_;
     my $dir = $self->dir->stringify;
