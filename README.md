@@ -13,7 +13,7 @@ cpanm App::karr
 ### Docker
 
 ```bash
-# Pull from GHCR
+# Pull from Docker Hub
 docker run --rm -it -v $(pwd):/work raudssus/karr --help
 
 # Or use the latest tag
@@ -62,6 +62,7 @@ karr board
 | `handoff` | Hand off task to review with notes |
 | `config` | View/modify board configuration |
 | `context` | Generate markdown summary for agent embedding |
+| `sync` | Sync board with remote (Git refs/karr/*) |
 | `skill` | Install/check/update Claude Code skills |
 | `agentname` | Generate random two-word agent name |
 

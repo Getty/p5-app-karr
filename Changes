@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+    - Add Git sync support via refs/karr/* (experimental)
+    - Add karr sync command (--push, --pull)
+    - Add auto-sync to write commands (create, move, edit, delete, pick, handoff, archive)
+    - Add App::karr::Git for Git operations via CLI
+    - Add App::karr::Lock for task locking via refs/karr/tasks/<id>/lock
+    - Add Docker support (raudssus/karr on GHCR)
     - Initial release
     - Implemented archive command (soft-delete to archived status)
     - Implemented handoff command (move to review with claim, note, block/release)
