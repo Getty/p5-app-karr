@@ -31,6 +31,7 @@ my @COMMANDS = (
   [ handoff   => 'Hand off a task for review' ],
   [ config    => 'View or modify board config' ],
   [ context   => 'Generate board context summary' ],
+  [ sync      => 'Sync board with remote' ],
   [ agentname => 'Generate a random agent name' ],
   [ skill     => 'Install/update agent skills' ],
 );
