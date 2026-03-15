@@ -67,8 +67,21 @@ option body => (
   doc => 'Task description',
 );
 
+sub _sync_after {
+  my ($self) = @_;
+  require App::karr::Git;
+  my $git = App::karr::Git->new( dir => $self->board_dir->stringify );
+  return unless $git->is_repo;
+  $git->pull;
+  $git->push;
+}
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
+
+  # Auto-sync before
+  $self->_sync_after if -d '.git';
+
   my $title = $self->title // $args_ref->[0]
     or die "Title is required. Use --title or pass as argument.\n";
 

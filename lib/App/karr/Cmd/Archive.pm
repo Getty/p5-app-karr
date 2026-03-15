@@ -13,8 +13,21 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+sub _sync_after {
+  my ($self) = @_;
+  require App::karr::Git;
+  my $git = App::karr::Git->new( dir => $self->board_dir->stringify );
+  return unless $git->is_repo;
+  $git->pull;
+  $git->push;
+}
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
+
+  # Auto-sync before
+  $self->_sync_after if -d '.git';
+
   my $id_str = $args_ref->[0] or die "Usage: karr archive ID[,ID,...]\n";
 
   my @ids = $self->parse_ids($id_str);

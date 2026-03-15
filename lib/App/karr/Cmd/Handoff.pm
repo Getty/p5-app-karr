@@ -45,8 +45,21 @@ option release => (
   doc => 'Release claim after handoff',
 );
 
+sub _sync_after {
+  my ($self) = @_;
+  require App::karr::Git;
+  my $git = App::karr::Git->new( dir => $self->board_dir->stringify );
+  return unless $git->is_repo;
+  $git->pull;
+  $git->push;
+}
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
+
+  # Auto-sync before
+  $self->_sync_after if -d '.git';
+
   my $id = $args_ref->[0] or die "Usage: karr handoff ID --claim NAME [--note TEXT] [--block REASON] [--release]\n";
 
   my $config = App::karr::Config->new(
