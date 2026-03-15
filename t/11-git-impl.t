@@ -11,12 +11,16 @@ subtest 'git config: user.email must be set' => sub {
 };
 
 subtest 'git repo detection' => sub {
-    my $git_dir = path('.git');
-    ok($git_dir->exists, '.git directory exists');
+    # Find the source repo (parent of build dir, or current dir if not in build)
+    my $dir = path('.');
+    my $src_dir = $dir->exists('lib/App/karr.pm') ? $dir : $dir->parent;
+    my $git_dir = $src_dir->child('.git');
 
-    my $head = `git rev-parse --is-inside-work-tree`;
+    ok($git_dir->exists, '.git directory exists in source');
+
+    my $head = `cd $src_dir && git rev-parse --is-inside-work-tree`;
     chomp $head;
-    is($head, 'true', 'current dir is inside git work tree');
+    is($head, 'true', 'source dir is inside git work tree');
 };
 
 subtest 'refs/karr/ refs work' => sub {
