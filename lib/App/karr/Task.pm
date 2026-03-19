@@ -76,23 +76,27 @@ sub to_markdown {
   return $md;
 }
 
-sub from_file {
-  my ($class, $file) = @_;
-  $file = path($file);
-  my $content = $file->slurp_utf8;
-
+sub _parse_content {
+  my ($class, $content) = @_;
   my ($yaml, $body) = $content =~ m{^---\n(.+?)---\n(.*)$}s
-    or die "Invalid task file: $file\n";
+    or die "Invalid task format\n";
   $body //= '';
   $body =~ s/^\n//;
   $body =~ s/\n$//;
+  return (Load($yaml), $body);
+}
 
-  my $fm = Load($yaml);
-  return $class->new(
-    %$fm,
-    body      => $body,
-    file_path => $file,
-  );
+sub from_string {
+  my ($class, $content) = @_;
+  my ($fm, $body) = $class->_parse_content($content);
+  return $class->new(%$fm, body => $body);
+}
+
+sub from_file {
+  my ($class, $file) = @_;
+  $file = path($file);
+  my ($fm, $body) = $class->_parse_content($file->slurp_utf8);
+  return $class->new(%$fm, body => $body, file_path => $file);
 }
 
 sub save {

@@ -108,4 +108,57 @@ subtest 'git_user_email and git_user_name' => sub {
     is($git->git_user_identity, 'Karr Bot <karr@example.com>', 'git_user_identity combines both');
 };
 
+subtest 'save_task_ref / load_task_ref roundtrip' => sub {
+    my $tmpdir = tempdir( CLEANUP => 1 );
+    system('git', 'init', '-q', $tmpdir->stringify);
+    system('git', '-C', $tmpdir->stringify, 'config', 'user.email', 'test@test.com');
+    system('git', '-C', $tmpdir->stringify, 'config', 'user.name', 'Test');
+
+    require App::karr::Task;
+
+    my $git = App::karr::Git->new( dir => $tmpdir->stringify );
+    my $task = App::karr::Task->new(
+        id => 1, title => 'Test save ref', status => 'todo',
+        priority => 'high', class => 'standard', body => 'Some body text',
+    );
+
+    $git->save_task_ref($task);
+
+    my $loaded = $git->load_task_ref(1);
+    ok $loaded, 'load_task_ref returns task';
+    is $loaded->id, 1, 'loaded task id';
+    is $loaded->title, 'Test save ref', 'loaded task title';
+    is $loaded->body, 'Some body text', 'loaded task body';
+
+    # Test load nonexistent
+    my $missing = $git->load_task_ref(999);
+    ok !$missing, 'load_task_ref returns undef for missing';
+};
+
+subtest 'list_task_refs' => sub {
+    my $tmpdir = tempdir( CLEANUP => 1 );
+    system('git', 'init', '-q', $tmpdir->stringify);
+    system('git', '-C', $tmpdir->stringify, 'config', 'user.email', 'test@test.com');
+    system('git', '-C', $tmpdir->stringify, 'config', 'user.name', 'Test');
+
+    require App::karr::Task;
+
+    my $git = App::karr::Git->new( dir => $tmpdir->stringify );
+
+    my $t1 = App::karr::Task->new(
+        id => 1, title => 'First', status => 'todo',
+        priority => 'high', class => 'standard',
+    );
+    my $t2 = App::karr::Task->new(
+        id => 2, title => 'Second', status => 'backlog',
+        priority => 'medium', class => 'standard',
+    );
+
+    $git->save_task_ref($t1);
+    $git->save_task_ref($t2);
+
+    my @ids = $git->list_task_refs;
+    is_deeply \@ids, [1, 2], 'list_task_refs returns sorted IDs';
+};
+
 done_testing;
