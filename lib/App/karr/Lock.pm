@@ -4,12 +4,16 @@ package App::karr::Lock;
 
 use strict;
 use warnings;
-use App::karr::Git;
 
 sub new {
     my ( $class, %args ) = @_;
+    my $git = $args{git};
+    unless ($git) {
+        require App::karr::Git;
+        $git = App::karr::Git->new( dir => $args{dir} // '.' );
+    }
     return bless {
-        git     => App::karr::Git->new( dir => $args{dir} // '.' ),
+        git     => $git,
         task_id => $args{task_id},
     }, $class;
 }
@@ -35,13 +39,11 @@ sub acquire {
     $task_id //= $self->task_id;
     my $ref = $self->ref_name($task_id);
 
-    # Check if already locked
     my $current = $self->get($task_id);
     if ( $current && $current ne $email ) {
         return ( 0, "locked by $current" );
     }
 
-    # Acquire lock
     $self->git->write_ref( $ref, $email );
     return ( 1, "acquired" );
 }
@@ -51,7 +53,6 @@ sub release {
     $task_id //= $self->task_id;
     my $ref = $self->ref_name($task_id);
 
-    # Check ownership
     my $current = $self->get($task_id);
     if ( $current && $current ne $email ) {
         return ( 0, "locked by $current" );

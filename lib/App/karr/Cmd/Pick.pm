@@ -93,32 +93,73 @@ sub execute {
     return;
   }
 
-  my $task = $tasks[0];
-  $task->claimed_by($self->claim);
-  $task->claimed_at(gmtime->datetime . 'Z');
+  # Try to lock + claim
+  require App::karr::Git;
+  my $git = App::karr::Git->new(dir => $self->board_dir->parent->stringify);
+  my $use_lock = $git->is_repo;
+  my $lock;
+  if ($use_lock) {
+    require App::karr::Lock;
+    $lock = App::karr::Lock->new(git => $git);
+  }
+  my $email = $use_lock ? ($git->git_user_email || $self->claim) : $self->claim;
 
-  if ($self->move) {
-    $task->status($self->move);
-    if ($self->move eq 'in-progress' && !$task->has_started) {
-      $task->started(gmtime->strftime('%Y-%m-%d'));
+  my $picked;
+  for my $task (@tasks) {
+    if ($use_lock) {
+      my ($ok, $msg) = $lock->acquire($task->id, $email);
+      next unless $ok;
     }
+
+    $task->claimed_by($self->claim);
+    $task->claimed_at(gmtime->datetime . 'Z');
+
+    if ($self->move) {
+      $task->status($self->move);
+      if ($self->move eq 'in-progress' && !$task->has_started) {
+        $task->started(gmtime->strftime('%Y-%m-%d'));
+      }
+    }
+
+    $task->save;
+    $picked = $task;
+    last;
   }
 
-  $task->save;
+  unless ($picked) {
+    print "No available tasks to pick (all locked).\n";
+    return;
+  }
 
+  # Serialize + push BEFORE releasing lock
   $self->sync_after;
 
+  # Log the pick action
+  if ($use_lock) {
+    $self->append_log($git,
+      agent   => $self->claim,
+      action  => 'pick',
+      task_id => $picked->id,
+      detail  => $picked->status,
+    );
+  }
+
+  # Release lock AFTER sync
+  if ($use_lock) {
+    $lock->release($picked->id, $email);
+  }
+
   if ($self->json) {
-    my $data = $task->to_frontmatter;
-    $data->{body} = $task->body if $task->body;
+    my $data = $picked->to_frontmatter;
+    $data->{body} = $picked->body if $picked->body;
     $self->print_json($data);
     return;
   }
 
-  printf "Picked task %d: %s (claimed by %s)\n", $task->id, $task->title, $self->claim;
-  printf "Status: %s | Priority: %s | Class: %s\n", $task->status, $task->priority, $task->class;
-  if ($task->body) {
-    print "\n" . $task->body . "\n";
+  printf "Picked task %d: %s (claimed by %s)\n", $picked->id, $picked->title, $self->claim;
+  printf "Status: %s | Priority: %s | Class: %s\n", $picked->status, $picked->priority, $picked->class;
+  if ($picked->body) {
+    print "\n" . $picked->body . "\n";
   }
 }
 
