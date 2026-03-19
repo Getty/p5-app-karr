@@ -63,6 +63,7 @@ karr board
 | `config` | View/modify board configuration |
 | `context` | Generate markdown summary for agent embedding |
 | `sync` | Sync board with remote (Git refs/karr/*) |
+| `log` | Show activity log (filtered by agent/task) |
 | `skill` | Install/check/update Claude Code skills |
 | `agentname` | Generate random two-word agent name |
 

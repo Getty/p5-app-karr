@@ -51,19 +51,6 @@ sub execute {
 
   print "Initialized karr board in karr/\n";
 
-  # Offer to add to .gitignore
-  my $gitignore = path('.gitignore');
-  if ($gitignore->exists) {
-    my $content = $gitignore->slurp_utf8;
-    unless ($content =~ m{^karr/?$}m) {
-      $gitignore->append_utf8("karr/\n");
-      print "Added karr/ to .gitignore\n";
-    }
-  } else {
-    $gitignore->spew_utf8("karr/\n");
-    print "Created .gitignore with karr/\n";
-  }
-
   if ($self->claude_skill) {
     $self->_install_claude_skill;
   }

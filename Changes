@@ -1,6 +1,20 @@
 {{$NEXT}}
 
-    - Add Git sync support via refs/karr/* (experimental)
+    - BREAKING: Git sync stores task data in commit-wrapped refs (pushable/fetchable)
+    - Full board sync via refs/karr/* (fetch/materialize/serialize/push)
+    - Add karr log command for activity trail (per-agent NDJSON refs)
+    - Add --claimed-by filter to list command
+    - Add Task->from_string for ref-based loading
+    - Rewrite Git.pm with safe execution (_git_cmd, no shell injection)
+    - Fix write_ref to create commit-wrapped refs (blob→tree→commit)
+    - Fix is_repo to work from subdirectories (git rev-parse)
+    - Fix push refspec to refs/karr/*:refs/karr/*
+    - Pick command uses Lock for atomic task claiming
+    - Remove .gitignore manipulation from init
+    - Extract sync_before/sync_after into BoardAccess role
+    - Extract _parse_timeout/_claim_expired into ClaimTimeout role
+    - Refactor Lock.pm to accept pre-built Git object
+    - Docker: add default git identity ENV vars
     - Add karr sync command (--push, --pull)
     - Add auto-sync to write commands (create, move, edit, delete, pick, handoff, archive)
     - Add App::karr::Git for Git operations via CLI

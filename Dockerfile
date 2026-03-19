@@ -21,4 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
 COPY --from=builder /usr/local/lib/perl5/site_perl/ /usr/local/lib/perl5/site_perl/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
+ENV GIT_AUTHOR_NAME="karr"
+ENV GIT_AUTHOR_EMAIL="karr@localhost"
+ENV GIT_COMMITTER_NAME="karr"
+ENV GIT_COMMITTER_EMAIL="karr@localhost"
+
 ENTRYPOINT ["karr"]

@@ -34,6 +34,7 @@ karr list --priority high,critical           # filter by priority
 karr list --tag backend                      # filter by tag
 karr list -s "search term"                   # search title/body/tags
 karr list --sort priority --reverse          # sort and reverse
+karr list --claimed-by agent-1               # filter by claim owner
 karr list --compact                          # one-line output (agent-friendly)
 karr list --json                             # JSON output
 ```
@@ -144,6 +145,15 @@ karr skill show                              # print skill content to stdout
 ```
 
 Supported agents: `claude-code`, `codex`, `cursor`.
+
+### Activity log
+
+```bash
+karr log                                     # last 20 entries
+karr log --agent swift-fox                   # filter by agent
+karr log --task 5                            # filter by task
+karr log --last 50 --json                    # more entries, JSON
+```
 
 ### Agent name
 
