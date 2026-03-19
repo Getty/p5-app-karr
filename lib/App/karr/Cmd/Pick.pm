@@ -13,7 +13,7 @@ use App::karr::Task;
 use App::karr::Config;
 use Time::Piece;
 
-with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
+with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output', 'App::karr::Role::ClaimTimeout';
 
 option claim => (
   is => 'ro',
@@ -40,20 +40,10 @@ option tags => (
   doc => 'Only pick tasks matching at least one tag',
 );
 
-sub _sync_after {
-  my ($self) = @_;
-  require App::karr::Git;
-  my $git = App::karr::Git->new( dir => $self->board_dir->stringify );
-  return unless $git->is_repo;
-  $git->pull;
-  $git->push;
-}
-
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
-  # Auto-sync before
-  $self->_sync_after if -d '.git';
+  $self->sync_before;
 
   my $config = App::karr::Config->new(
     file => $self->board_dir->child('config.yml'),
@@ -116,6 +106,8 @@ sub execute {
 
   $task->save;
 
+  $self->sync_after;
+
   if ($self->json) {
     my $data = $task->to_frontmatter;
     $data->{body} = $task->body if $task->body;
@@ -128,22 +120,6 @@ sub execute {
   if ($task->body) {
     print "\n" . $task->body . "\n";
   }
-}
-
-sub _parse_timeout {
-  my ($self, $timeout_str) = @_;
-  return 3600 unless $timeout_str;
-  if ($timeout_str =~ /^(\d+)h$/) { return $1 * 3600; }
-  if ($timeout_str =~ /^(\d+)m$/) { return $1 * 60; }
-  return 3600;
-}
-
-sub _claim_expired {
-  my ($self, $task, $timeout_secs) = @_;
-  return 0 unless $task->has_claimed_at;
-  my $claimed = eval { Time::Piece->strptime($task->claimed_at =~ s/Z$//r, '%Y-%m-%dT%H:%M:%S') };
-  return 0 unless $claimed;
-  return (gmtime() - $claimed) > $timeout_secs;
 }
 
 1;

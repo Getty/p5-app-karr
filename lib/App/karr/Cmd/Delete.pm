@@ -19,20 +19,10 @@ option yes => (
   doc => 'Skip confirmation',
 );
 
-sub _sync_after {
-  my ($self) = @_;
-  require App::karr::Git;
-  my $git = App::karr::Git->new( dir => $self->board_dir->stringify );
-  return unless $git->is_repo;
-  $git->pull;
-  $git->push;
-}
-
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
-  # Auto-sync before
-  $self->_sync_after if -d '.git';
+  $self->sync_before;
 
   my $id_str = $args_ref->[0] or die "Usage: karr delete ID[,ID,...] [--yes] [--json]\n";
   my @ids = $self->parse_ids($id_str);
@@ -57,6 +47,8 @@ sub execute {
     push @results, { id => $task->id, title => $task->title, deleted => \1 };
     printf "Deleted task %d: %s\n", $task->id, $task->title unless $self->json;
   }
+
+  $self->sync_after;
 
   if ($self->json) {
     $self->print_json(@results == 1 ? $results[0] : \@results);
