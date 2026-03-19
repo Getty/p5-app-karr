@@ -5,6 +5,7 @@ package App::karr::Git;
 use strict;
 use warnings;
 use Path::Tiny qw( path );
+use IPC::Open2;
 
 sub new {
     my ( $class, %args ) = @_;
@@ -18,23 +19,53 @@ sub dir {
     return path( $self->{dir} );
 }
 
+sub _git_cmd {
+    my ($self, @cmd) = @_;
+    my $dir = $self->dir->stringify;
+    my $pid = open(my $fh, '-|');
+    if (!defined $pid) {
+        die "fork failed: $!";
+    }
+    if (!$pid) {
+        open(STDERR, '>', '/dev/null');
+        chdir $dir or die "chdir $dir: $!";
+        exec('git', @cmd) or die "exec git: $!";
+    }
+    my $output = do { local $/; <$fh> };
+    close $fh;
+    my $ok = $? == 0;
+    chomp $output if defined $output;
+    return wantarray ? ($output, $ok) : $output;
+}
+
+sub _git_cmd_stdin {
+    my ($self, $input, @cmd) = @_;
+    my $dir = $self->dir->stringify;
+    my $pid = open2(my $out_fh, my $in_fh, 'git', '-C', $dir, @cmd);
+    print $in_fh $input;
+    close $in_fh;
+    my $output = do { local $/; <$out_fh> };
+    waitpid($pid, 0);
+    chomp $output if defined $output;
+    return $output;
+}
+
 sub is_repo {
     my ($self) = @_;
-    return $self->dir->child('.git')->exists;
+    my ($out, $ok) = $self->_git_cmd('rev-parse', '--show-toplevel');
+    return $ok;
 }
 
 sub git_user_email {
     my ($self) = @_;
-    my $email = `git config --get user.email`;
-    chomp $email;
-    return $email;
+    my ($email, $ok) = $self->_git_cmd('config', '--get', 'user.email');
+    return $ok ? $email : '';
 }
 
 sub git_user_name {
     my ($self) = @_;
-    my $name = `git config --get user.name`;
-    chomp $name;
-    return $name;
+    my ($name, $ok) = $self->_git_cmd('config', '--get', 'user.name');
+    return $ok ? $name : '';
 }
 
 sub git_user_identity {
@@ -42,69 +73,88 @@ sub git_user_identity {
     my $name = $self->git_user_name;
     my $email = $self->git_user_email;
     return "$name <$email>" if $name && $email;
-    return $email // $name // '';
-}
-
-sub read_ref {
-    my ( $self, $ref ) = @_;
-    my $dir = $self->dir->stringify;
-    my $content = `cd '$dir' && git cat-file -p '$ref' 2>/dev/null`;
-    chomp $content if defined $content;
-    return $content // '';
+    return $email || $name || '';
 }
 
 sub write_ref {
     my ( $self, $ref, $content ) = @_;
-    my $dir = $self->dir->stringify;
 
-    # Escape content for shell
-    $content =~ s/'/'\\''/g;
+    # Create blob from content via stdin
+    my $blob = $self->_git_cmd_stdin($content, 'hash-object', '-w', '--stdin');
+    return unless $blob;
 
-    # Create blob from content
-    my $blob_sha = `cd '$dir' && echo -n '$content' | git hash-object -w --stdin`;
-    chomp $blob_sha;
+    # Create tree containing the blob as "data"
+    my $tree_line = sprintf("100644 blob %s\tdata", $blob);
+    my $tree = $self->_git_cmd_stdin($tree_line, 'mktree');
+    return unless $tree;
 
-    return unless $blob_sha;
+    # Create commit wrapping the tree
+    my $commit = $self->_git_cmd('commit-tree', $tree, '-m', 'karr ref update');
+    return unless $commit;
 
-    # Create/update ref
-    `cd '$dir' && git update-ref '$ref' $blob_sha`;
+    # Point ref at commit
+    $self->_git_cmd('update-ref', $ref, $commit);
     return 1;
+}
+
+sub read_ref {
+    my ( $self, $ref ) = @_;
+    my ($content, $ok) = $self->_git_cmd('cat-file', '-p', "$ref:data");
+    return $ok ? $content : '';
 }
 
 sub delete_ref {
     my ( $self, $ref ) = @_;
-    my $dir = $self->dir->stringify;
-    `cd '$dir' && git update-ref -d '$ref' 2>/dev/null`;
+    $self->_git_cmd('update-ref', '-d', $ref);
     return 1;
 }
 
 sub fetch {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
-    my $dir = $self->dir->stringify;
-    system("cd \"$dir\" && git fetch \"$remote\" 2>/dev/null");
-    return $? == 0;
+    my (undef, $ok) = $self->_git_cmd('fetch', $remote);
+    return $ok;
 }
 
 sub push {
     my ( $self, $remote, $refspec ) = @_;
     $remote //= 'origin';
-    my $dir = $self->dir->stringify;
-
-    if ($refspec) {
-        system("cd \"$dir\" && git push \"$remote\" $refspec 2>/dev/null");
-    } else {
-        system("cd \"$dir\" && git push \"$remote\" refs/karr/ 2>/dev/null");
-    }
-    return $? == 0;
+    $refspec //= 'refs/karr/*:refs/karr/*';
+    my (undef, $ok) = $self->_git_cmd('push', $remote, $refspec);
+    return $ok;
 }
 
 sub pull {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
-    my $dir = $self->dir->stringify;
-    system("cd \"$dir\" && git fetch \"$remote\" refs/karr/*:refs/karr/* 2>/dev/null");
-    return $? == 0;
+    my (undef, $ok) = $self->_git_cmd('fetch', $remote, 'refs/karr/*:refs/karr/*');
+    return $ok;
+}
+
+sub save_task_ref {
+    my ($self, $task) = @_;
+    my $ref = "refs/karr/tasks/" . $task->id . "/data";
+    $self->write_ref($ref, $task->to_markdown);
+}
+
+sub load_task_ref {
+    my ($self, $id) = @_;
+    my $ref = "refs/karr/tasks/$id/data";
+    my $content = $self->read_ref($ref);
+    return undef unless $content;
+    require App::karr::Task;
+    return App::karr::Task->from_string($content);
+}
+
+sub list_task_refs {
+    my ($self) = @_;
+    my $output = $self->_git_cmd('for-each-ref', '--format=%(refname)', 'refs/karr/tasks/');
+    return () unless $output;
+    my %ids;
+    for (split /\n/, $output) {
+        $ids{$1} = 1 if m{refs/karr/tasks/(\d+)/};
+    }
+    return sort { $a <=> $b } keys %ids;
 }
 
 1;
