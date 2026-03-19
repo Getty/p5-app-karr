@@ -23,6 +23,7 @@ my @modules = qw(
   App::karr::Cmd::Config
   App::karr::Cmd::Context
   App::karr::Cmd::Skill
+  App::karr::Cmd::Log
 );
 
 for my $mod (@modules) {
