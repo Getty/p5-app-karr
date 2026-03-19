@@ -44,6 +44,12 @@ option search => (
   doc => 'Search tasks by title, body, or tags',
 );
 
+option claimed_by => (
+  is => 'ro',
+  format => 's',
+  doc => 'Filter by claim owner',
+);
+
 option sort => (
   is => 'ro',
   format => 's',
@@ -118,6 +124,9 @@ sub _filter {
       my $t = $_;
       grep { $_ eq $self->tag } @{$t->tags};
     } @filtered;
+  }
+  if ($self->claimed_by) {
+    @filtered = grep { $_->has_claimed_by && $_->claimed_by eq $self->claimed_by } @filtered;
   }
   if ($self->search) {
     my $q = lc($self->search);
