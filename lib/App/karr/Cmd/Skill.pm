@@ -1,7 +1,7 @@
 # ABSTRACT: Install, check, and update Claude Code skills
 
 package App::karr::Cmd::Skill;
-
+our $VERSION = '0.004';
 use Moo;
 use MooX::Cmd;
 use MooX::Options (
