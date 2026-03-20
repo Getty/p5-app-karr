@@ -14,24 +14,18 @@ subtest 'git repo detection' => sub {
     # Find the source repo - walk up looking for .git and lib/App/karr.pm
     my $dir = path('.')->absolute;
     my $src_dir;
-    my $max_up = 5;
 
-    for (my $i = 0; $i <= $max_up; $i++) {
-        my $d = $i == 0 ? $dir : $dir->parent;
+    for my $d ($dir, $dir->parent, $dir->parent->parent, $dir->parent->parent->parent) {
         last unless defined $d && $d->exists;
-        if ($d->exists('.git') && $d->exists('lib') && $d->child('lib/App/karr.pm')->exists) {
+        if ($d->child('.git')->exists && $d->child('lib/App/karr.pm')->exists) {
             $src_dir = $d;
             last;
         }
     }
 
-    unless ($src_dir) {
-        skip 'Not running from source directory' => 2;
-        return;
-    }
+    plan skip_all => 'Not running from source directory' unless $src_dir;
 
-    my $git_dir = $src_dir->child('.git');
-    ok($git_dir->exists, '.git directory exists in source');
+    ok($src_dir->child('.git')->exists, '.git directory exists in source');
 
     my $head = `cd $src_dir && git rev-parse --is-inside-work-tree`;
     chomp $head;
