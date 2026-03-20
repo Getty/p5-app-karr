@@ -1,4 +1,4 @@
-{{$NEXT}}
+0.003     2026-03-20 05:01:01Z
 
     - BREAKING: Git sync stores task data in commit-wrapped refs (pushable/fetchable)
     - Full board sync via refs/karr/* (fetch/materialize/serialize/push)
