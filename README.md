@@ -1,6 +1,6 @@
 # App::karr — Kanban Assignment & Responsibility Registry
 
-A file-based kanban board CLI for multi-agent workflows. Perl reimplementation of [kanban-md](https://github.com/antopolskiy/kanban-md) with full interoperability.
+A file-based kanban board CLI for multi-agent workflows. Tasks are coordinated via Git refs — multiple AI agents can pick, claim, and hand off work across machines using `git push/fetch`.
 
 ## Installation
 
@@ -20,10 +20,10 @@ docker run --rm -it -v $(pwd):/work raudssus/karr --help
 docker run --rm -it -v $(pwd):/work raudssus/karr:latest --help
 ```
 
-**Recommended: Add an alias to your shell:**
+**Recommended: Add an alias to your shell (with Git config for sync):**
 
 ```bash
-alias karr='docker run --rm -it -v $(pwd):/work raudssus/karr'
+alias karr='docker run --rm -v $(pwd):/work -v $HOME/.gitconfig:/root/.gitconfig:ro raudssus/karr'
 ```
 
 Now use `karr` as if it were installed locally:
@@ -67,24 +67,54 @@ karr board
 | `skill` | Install/check/update Claude Code skills |
 | `agentname` | Generate random two-word agent name |
 
+## Git Sync (core feature)
+
+Board state lives in `refs/karr/*` — not in branches or commits. Every write command automatically syncs:
+
+```
+fetch refs → materialize to local files → apply change → serialize to refs → push
+```
+
+Multiple agents on different machines see each other's changes via `git push/fetch`. No merge conflicts — each task has its own ref, and locks prevent simultaneous edits.
+
+```bash
+karr sync              # full sync (pull + push)
+karr sync --pull       # pull only
+karr sync --push       # push only
+```
+
 ## Multi-agent workflow
 
 ```bash
+# Agent picks highest-priority unclaimed task
 NAME=$(karr agentname)
-karr pick --claim $NAME --status todo --move in-progress
-# ... work ...
-karr handoff 1 --claim $NAME --note "Done" --timestamp
+karr pick --claim $NAME --status todo --move in-progress --json
+
+# Agent works on the task...
+
+# Hand off for review
+karr handoff 1 --claim $NAME --note "Implementation complete" --timestamp
+
+# Check what I'm working on
+karr list --claimed-by $NAME --status in-progress
+
+# View activity log
+karr log --agent $NAME
 ```
 
 ## Features
 
+- **Git-native sync** — board state in `refs/karr/*`, syncs via `git push/fetch`
+- **Atomic pick with locking** — `pick` uses git ref locks to prevent race conditions
+- **Activity log** — every mutation recorded, per-agent, queryable via `karr log`
 - **Batch operations** — `karr move 1,2,3 done`, `karr archive 4,5,6`
 - **JSON output** — `--json` on all commands for machine consumption
 - **Compact output** — `--compact` for agent-friendly one-liners
-- **Claim management** — claim timeouts, require_claim enforcement
+- **Claim management** — claim timeouts, `--claimed-by` filter, require_claim enforcement
 - **Class of service** — expedite, fixed-date, standard, intangible priority ordering
 - **WIP limits** — per-status limits shown on board
-- **File::ShareDir** — ships Claude Code skill, installable via `karr init --claude-skill` or `karr skill install`
+- **Claude Code skill** — ships via File::ShareDir, installable via `karr skill install`
+- **Docker-first** — `raudssus/karr` image with built-in git identity
 
 ## Task file format
 
