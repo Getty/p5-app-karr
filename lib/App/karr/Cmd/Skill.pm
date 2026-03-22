@@ -221,12 +221,13 @@ sub _skill_content {
   my ($self) = @_;
 
   # Try File::ShareDir (installed dist)
-  eval {
+  my $installed = eval {
     require File::ShareDir;
     my $dir = File::ShareDir::dist_dir('App-karr');
     my $file = path($dir)->child('claude-skill.md');
-    return $file->slurp_utf8 if $file->exists;
+    $file->slurp_utf8 if $file->exists;
   };
+  return $installed if defined $installed && length $installed;
 
   # Fallback: relative to module location (development)
   my $module_path = $INC{'App/karr/Cmd/Skill.pm'};

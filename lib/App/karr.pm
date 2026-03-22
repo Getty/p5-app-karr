@@ -59,10 +59,10 @@ shipped skill installation.
 
 Day-to-day task lifecycle management.
 
-=item * C<board>, C<pick>, C<handoff>, C<log>, C<sync>, C<agentname>
+=item * C<board>, C<pick>, C<handoff>, C<destroy>, C<log>, C<sync>, C<agentname>
 
 Board visualisation, multi-agent coordination, activity inspection, Git sync,
-and helper utilities.
+board teardown, and helper utilities.
 
 =item * C<set-refs>, C<get-refs>
 
@@ -103,6 +103,7 @@ my @COMMANDS = (
   [ pick      => 'Claim the next available task' ],
   [ archive   => 'Archive a task (soft-delete)' ],
   [ handoff   => 'Hand off a task for review' ],
+  [ destroy   => 'Delete the entire refs/karr/* board' ],
   [ config    => 'View or modify board config' ],
   [ context   => 'Generate board context summary' ],
   [ backup    => 'Export refs/karr/* as YAML' ],

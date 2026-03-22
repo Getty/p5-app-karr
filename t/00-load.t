@@ -20,6 +20,7 @@ my @modules = qw(
   App::karr::Cmd::Pick
   App::karr::Cmd::Archive
   App::karr::Cmd::Handoff
+  App::karr::Cmd::Destroy
   App::karr::Cmd::AgentName
   App::karr::Cmd::Config
   App::karr::Cmd::Context
