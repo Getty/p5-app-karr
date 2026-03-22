@@ -8,8 +8,9 @@ use MooX::Options (
   usage_string => 'USAGE: karr init [--name TEXT] [--statuses LIST] [--claude-skill]',
 );
 use Path::Tiny;
-use YAML::XS qw( DumpFile );
 use App::karr::Config;
+use App::karr::Git;
+use App::karr::BoardStore;
 
 =head1 SYNOPSIS
 
@@ -19,9 +20,9 @@ use App::karr::Config;
 
 =head1 DESCRIPTION
 
-Creates a new F<karr/> board in the current working directory. The command
-generates F<karr/config.yml>, creates the task directory, and can optionally
-install the bundled Claude Code skill into the repository.
+Creates a new board inside C<refs/karr/*> in the current Git repository. The
+command writes the initial config and metadata refs and can optionally install
+the bundled Claude Code skill into the repository.
 
 =head1 OPTIONS
 
@@ -62,35 +63,35 @@ option claude_skill => (
 
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
-  my $dir = path('karr');
+  my $git = App::karr::Git->new( dir => '.' );
+  die "Not a git repository. karr requires Git.\n" unless $git->is_repo;
 
-  if ($dir->child('config.yml')->exists) {
-    die "Board already exists in karr/\n";
-  }
+  my $root = $git->repo_root;
+  my $store = App::karr::BoardStore->new( git => App::karr::Git->new( dir => $root->stringify ) );
+  die "Board already exists in refs/karr/\n" if $store->board_exists;
 
-  $dir->mkpath;
-  my $config = App::karr::Config->default_config(
-    name => $self->name,
-  );
+  my $overrides = { version => 1 };
+  $overrides->{board} = { name => $self->name } if defined $self->name;
 
   if ($self->statuses) {
     my @statuses = split /,/, $self->statuses;
-    $config->{statuses} = \@statuses;
+    $overrides->{statuses} = \@statuses;
   }
 
-  $dir->child('tasks')->mkpath;
-  DumpFile($dir->child('config.yml')->stringify, $config);
+  my $effective = App::karr::Config->effective_config($overrides);
+  $store->save_config($effective);
+  $store->set_next_id(1);
 
-  print "Initialized karr board in karr/\n";
+  print "Initialized karr board in refs/karr/\n";
 
   if ($self->claude_skill) {
-    $self->_install_claude_skill;
+    $self->_install_claude_skill($root);
   }
 }
 
 sub _install_claude_skill {
-  my ($self) = @_;
-  my $skill_dir = path('.claude/skills/karr');
+  my ($self, $root) = @_;
+  my $skill_dir = $root->child('.claude/skills/karr');
   $skill_dir->mkpath;
 
   my $skill_content = $self->_find_skill_source;

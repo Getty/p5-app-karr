@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Path::Tiny qw( path );
 use IPC::Open2;
+use YAML::XS qw( Dump Load );
 
 =head1 SYNOPSIS
 
@@ -70,6 +71,12 @@ sub is_repo {
     my ($self) = @_;
     my ($out, $ok) = $self->_git_cmd('rev-parse', '--show-toplevel');
     return $ok;
+}
+
+sub repo_root {
+    my ($self) = @_;
+    my ( $out, $ok ) = $self->_git_cmd( 'rev-parse', '--show-toplevel' );
+    return $ok ? path($out) : undef;
 }
 
 sub git_user_email {
@@ -152,10 +159,23 @@ sub read_ref {
     return $ok ? $content : '';
 }
 
+sub ref_exists {
+    my ( $self, $ref ) = @_;
+    my ( undef, $ok ) = $self->_git_cmd( 'show-ref', '--verify', '--quiet', $ref );
+    return $ok ? 1 : 0;
+}
+
 sub delete_ref {
     my ( $self, $ref ) = @_;
     $self->_git_cmd('update-ref', '-d', $ref);
     return 1;
+}
+
+sub has_remote {
+    my ( $self, $remote ) = @_;
+    $remote //= 'origin';
+    my ( undef, $ok ) = $self->_git_cmd( 'remote', 'get-url', $remote );
+    return $ok ? 1 : 0;
 }
 
 sub fetch {
@@ -168,14 +188,15 @@ sub fetch {
 sub push {
     my ( $self, $remote, $refspec ) = @_;
     $remote //= 'origin';
-    $refspec //= 'refs/karr/*:refs/karr/*';
-    my (undef, $ok) = $self->_git_cmd('push', $remote, $refspec);
+    $refspec //= '+refs/karr/*:refs/karr/*';
+    my (undef, $ok) = $self->_git_cmd('push', '--prune', $remote, $refspec);
     return $ok;
 }
 
 sub pull {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
+    return 1 unless $self->has_remote($remote);
     my (undef, $ok) = $self->_git_cmd('fetch', $remote, 'refs/karr/*:refs/karr/*');
     return $ok;
 }
@@ -184,7 +205,7 @@ sub push_ref {
     my ( $self, $ref, $remote ) = @_;
     $remote //= 'origin';
     $ref = $self->validate_helper_ref($ref);
-    my ( undef, $ok ) = $self->_git_cmd( 'push', $remote, "$ref:$ref" );
+    my ( undef, $ok ) = $self->_git_cmd( 'push', $remote, "+$ref:$ref" );
     return $ok;
 }
 
@@ -220,6 +241,47 @@ sub list_task_refs {
         $ids{$1} = 1 if m{refs/karr/tasks/(\d+)/};
   }
   return sort { $a <=> $b } keys %ids;
+}
+
+sub list_refs {
+    my ( $self, $prefix ) = @_;
+    $prefix //= 'refs/karr/';
+    my $output = $self->_git_cmd( 'for-each-ref', '--format=%(refname)', $prefix );
+    return () unless $output;
+    return grep { length } split /\n/, $output;
+}
+
+sub read_config_ref {
+    my ($self) = @_;
+    my $content = $self->read_ref('refs/karr/config');
+    return {} unless $content;
+    return Load($content);
+}
+
+sub write_config_ref {
+    my ( $self, $data ) = @_;
+    return $self->write_ref( 'refs/karr/config', Dump($data) );
+}
+
+sub read_next_id_ref {
+    my ($self) = @_;
+    my $content = $self->read_ref('refs/karr/meta/next-id');
+    return 1 unless length $content;
+    $content =~ s/\s+\z//;
+    return $content =~ /^\d+$/ ? int($content) : 1;
+}
+
+sub write_next_id_ref {
+    my ( $self, $next_id ) = @_;
+    return $self->write_ref( 'refs/karr/meta/next-id', "$next_id\n" );
+}
+
+sub delete_refs {
+    my ( $self, $prefix ) = @_;
+    for my $ref ( $self->list_refs($prefix) ) {
+        $self->delete_ref($ref);
+    }
+    return 1;
 }
 
 1;

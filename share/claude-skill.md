@@ -1,11 +1,13 @@
 ---
 name: karr
-description: Use when managing file-based kanban tasks or shared helper refs with the karr CLI in agent workflows.
+description: Use when managing Git-native kanban tasks or shared helper refs with the karr CLI in agent workflows.
 ---
 
 # karr — Kanban Assignment & Responsibility Registry
 
-File-based kanban board for multi-agent workflows. Tasks are Markdown files with YAML frontmatter in `karr/tasks/`. Board config in `karr/config.yml`.
+Git-native kanban board for multi-agent workflows. Canonical board state lives in
+`refs/karr/*`, not in a checked-in `karr/` directory. Commands materialize a
+temporary task/config view only while they run.
 
 ## Commands
 
@@ -15,7 +17,8 @@ File-based kanban board for multi-agent workflows. Tasks are Markdown files with
 karr init [--name NAME] [--statuses s1,s2,s3] [--claude-skill]
 ```
 
-Creates `karr/` directory with `config.yml` and `tasks/`. With `--claude-skill`, installs this skill to `.claude/skills/karr/SKILL.md`.
+Creates the board refs inside the current Git repository. With
+`--claude-skill`, installs this skill to `.claude/skills/karr/SKILL.md`.
 
 ### Create task
 
@@ -150,6 +153,15 @@ the current project at `/work` and uses `/home/karr` as `HOME`, so the image
 can drop privileges to the owner of the mounted workspace without breaking
 access to Git config or agent skill directories.
 
+### Backup and restore
+
+```bash
+karr backup > karr-backup.yml
+karr restore --yes < karr-backup.yml
+```
+
+`restore` is destructive and replaces the entire `refs/karr/*` namespace.
+
 ### Helper refs
 
 ```bash
@@ -178,7 +190,7 @@ karr agentname                               # generate random two-word name
 karr pick --claim $(karr agentname) --move in-progress
 ```
 
-## Task file format
+## Stored task format
 
 ```markdown
 ---
@@ -196,13 +208,16 @@ tags:
 Optional body with more detail.
 ```
 
-## Config (karr/config.yml)
+Tasks are stored under `refs/karr/tasks/*/data`. During command execution `karr`
+materializes the same Markdown shape into a temporary task directory, so this
+format still matters when reading or generating tasks programmatically.
+
+## Config refs
 
 ```yaml
 version: 1
 board:
   name: My Project
-tasks_dir: tasks
 statuses:
   - backlog
   - todo
@@ -221,8 +236,10 @@ defaults:
   status: backlog
   priority: medium
   class: standard
-next_id: 1
 ```
+
+That YAML lives in `refs/karr/config` as sparse overrides. The next numeric id
+is kept separately in `refs/karr/meta/next-id`.
 
 ## Decision tree: which command?
 
@@ -238,7 +255,8 @@ next_id: 1
 10. **Board snapshot for agent context?** → `karr context --write-to AGENTS.md`
 11. **Check/change config?** → `karr config` / `karr config set KEY VALUE`
 12. **Install agent skills?** → `karr skill install`
-13. **Need shared non-task workflow data?** → `karr set-refs` / `karr get-refs`
+13. **Need a full board snapshot?** → `karr backup` / `karr restore --yes`
+14. **Need shared non-task workflow data?** → `karr set-refs` / `karr get-refs`
 
 ## Multi-agent workflow
 
@@ -258,6 +276,10 @@ karr move ID done
 ```
 
 Claims expire after the configured timeout (default: 1h). Statuses with `require_claim: true` enforce that moves include `--claim`.
+
+Perl remains the primary local installation path, but a Docker alias around
+`raudssus/karr:latest` or `raudssus/karr:user` works with the same commands when
+another repository vendors `karr` instead of installing it locally.
 
 ## Helper-ref workflow
 

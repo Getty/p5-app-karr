@@ -22,9 +22,10 @@ with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
 =head1 DESCRIPTION
 
-Reads and updates the board configuration stored in F<karr/config.yml>. The
-command supports whole-file display, individual key lookup, and writes to a
-small set of explicitly writable keys.
+Reads and updates the board configuration stored canonically in
+C<refs/karr/config>. The command supports whole-config display, individual key
+lookup, and writes to a small set of explicitly writable keys. Internally it
+works on the temporary materialized YAML view generated for the command run.
 
 =head1 WRITABLE KEYS
 
@@ -56,6 +57,8 @@ sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
   my $action = $args_ref->[0] // 'show';
 
+  $self->sync_before if $action eq 'set';
+
   my $config = App::karr::Config->new(
     file => $self->board_dir->child('config.yml'),
   );
@@ -69,6 +72,7 @@ sub execute {
     my $key = $args_ref->[1] or die "Usage: karr config set KEY VALUE\n";
     my $val = $args_ref->[2] // die "Usage: karr config set KEY VALUE\n";
     $self->_set_key($config, $key, $val);
+    $self->sync_after;
   } else {
     die "Unknown action: $action (use show, get, or set)\n";
   }
@@ -105,7 +109,6 @@ sub _display_keys {
   push @out, ['wip_limits',         $d->{wip_limits}]         if $d->{wip_limits};
   push @out, ['claim_timeout',      $d->{claim_timeout}];
   push @out, ['classes',            [map { $_->{name} } @{$d->{classes} // []}]];
-  push @out, ['next_id',            $d->{next_id}];
   return @out;
 }
 

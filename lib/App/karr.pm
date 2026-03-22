@@ -22,14 +22,15 @@ with 'App::karr::Role::BoardAccess';
 =head1 DESCRIPTION
 
 L<App::karr> is the main entry point for the C<karr> command line tool. It
-manages a file-based kanban board stored in F<karr/>, where each task is a
-Markdown file with YAML frontmatter and the board configuration lives in
-F<karr/config.yml>.
+manages a Git-native kanban board stored in C<refs/karr/*>. Tasks are kept as
+Markdown payloads inside Git refs, while commands materialize a temporary board
+view only for the duration of each operation.
 
 The CLI is designed for local use and for multi-agent workflows backed by Git
-refs. Commands that mutate board state synchronize through C<refs/karr/*> when
-the board is inside a Git repository, so multiple machines or agents can see
-the same task state without merging task files by hand.
+refs. Commands that mutate board state synchronize through C<refs/karr/*>, so
+multiple machines or agents can see the same task state without merging task
+files by hand and without checking a persistent F<karr/> directory into the
+repository.
 
 Perl remains the primary local installation path, but Docker is a first-class
 runtime option when you want to vendor the client into other environments. The
@@ -49,10 +50,10 @@ without changing the task model.
 
 =over 4
 
-=item * C<init>, C<config>, C<context>, C<skill>
+=item * C<init>, C<config>, C<context>, C<backup>, C<restore>, C<skill>
 
-Board bootstrap, configuration, context generation, and shipped skill
-installation.
+Board bootstrap, configuration, context generation, backup and restore, and
+shipped skill installation.
 
 =item * C<create>, C<list>, C<show>, C<edit>, C<move>, C<delete>, C<archive>
 
@@ -72,9 +73,9 @@ board namespace.
 
 =head1 BOARD DISCOVERY
 
-Most commands automatically search upward from the current directory for a
-F<karr/config.yml> file. The global C<--dir> option overrides that discovery
-and points the CLI at a specific board directory.
+Most commands automatically search upward from the current directory for a Git
+repository that contains C<refs/karr/*>. The global C<--dir> option overrides
+the starting directory used for that repository discovery.
 
 =head1 DEFAULT BEHAVIOUR
 
@@ -86,7 +87,7 @@ tool convenient as a quick project status command.
 option dir => (
   is => 'ro',
   format => 's',
-  doc => 'Path to karr board directory (overrides auto-detection)',
+  doc => 'Path used as the starting point for Git repository discovery',
   predicate => 1,
 );
 
@@ -104,6 +105,8 @@ my @COMMANDS = (
   [ handoff   => 'Hand off a task for review' ],
   [ config    => 'View or modify board config' ],
   [ context   => 'Generate board context summary' ],
+  [ backup    => 'Export refs/karr/* as YAML' ],
+  [ restore   => 'Replace refs/karr/* from YAML' ],
   [ sync      => 'Sync board with remote' ],
   [ agentname => 'Generate a random agent name' ],
   [ skill     => 'Install/update agent skills' ],
@@ -128,7 +131,7 @@ sub _print_help {
   }
 
   $out .= "\n" . colored("OPTIONS:", 'bold') . "\n";
-  $out .= "  --dir PATH   Board directory (default: auto-detect karr/)\n";
+  $out .= "  --dir PATH   Starting path for Git repository discovery\n";
   $out .= "  --json       JSON output (most commands)\n";
   $out .= "  --compact    Compact output (list, board)\n";
   $out .= "\n" . colored("EXAMPLES:", 'bold') . "\n";
@@ -137,6 +140,8 @@ sub _print_help {
   $out .= "  karr list --status todo,in-progress\n";
   $out .= "  karr move 1 in-progress --claim agent-fox\n";
   $out .= "  karr pick --claim agent-fox --move in-progress\n";
+  $out .= "  karr backup > karr-backup.yml\n";
+  $out .= "  karr restore --yes < karr-backup.yml\n";
   $out .= "  karr set-refs superpowers/spec/1234.md draft ready\n";
   $out .= "  karr board\n";
   $out .= "\nRun " . colored("karr <command> --help", 'bold') . " for command-specific options.\n";

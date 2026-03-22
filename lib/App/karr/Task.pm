@@ -15,14 +15,16 @@ use JSON::MaybeXS qw( encode_json );
       title => 'Fix login bug',
     );
 
-    $task->save('karr/tasks');
-    my $same = App::karr::Task->from_file('karr/tasks/001-fix-login-bug.md');
+    $task->save('/tmp/karr-materialized/tasks');
+    my $same = App::karr::Task->from_file('/tmp/karr-materialized/tasks/001-fix-login-bug.md');
 
 =head1 DESCRIPTION
 
 L<App::karr::Task> models a single task card and knows how to translate between
 the in-memory object and the Markdown plus YAML frontmatter format used on
-disk and in Git refs.
+disk and in Git refs. The same Markdown document is stored in
+C<refs/karr/tasks/*/data> and in temporary task files that commands materialize
+while they run.
 
 =cut
 
@@ -89,6 +91,7 @@ sub to_frontmatter {
 sub to_markdown {
   my ($self) = @_;
   my $yaml = Dump($self->to_frontmatter);
+  $yaml =~ s/\A---\n//;
   my $md = "---\n${yaml}---\n";
   $md .= "\n" . $self->body . "\n" if $self->body;
   return $md;
@@ -96,7 +99,7 @@ sub to_markdown {
 
 sub _parse_content {
   my ($class, $content) = @_;
-  my ($yaml, $body) = $content =~ m{^---\n(.+?)---\n(.*)$}s
+  my ($yaml, $body) = $content =~ m{\A---\n(.+?)---(?:\n(.*))?\z}s
     or die "Invalid task format\n";
   $body //= '';
   $body =~ s/^\n//;

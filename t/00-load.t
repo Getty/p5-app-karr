@@ -6,6 +6,7 @@ my @modules = qw(
   App::karr
   App::karr::Task
   App::karr::Config
+  App::karr::BoardStore
   App::karr::Role::BoardAccess
   App::karr::Role::Output
   App::karr::Cmd::Init
@@ -22,6 +23,8 @@ my @modules = qw(
   App::karr::Cmd::AgentName
   App::karr::Cmd::Config
   App::karr::Cmd::Context
+  App::karr::Cmd::Backup
+  App::karr::Cmd::Restore
   App::karr::Cmd::Skill
   App::karr::Cmd::Log
   App::karr::Cmd::SetRefs

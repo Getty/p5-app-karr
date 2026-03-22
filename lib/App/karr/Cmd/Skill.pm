@@ -1,4 +1,4 @@
-# ABSTRACT: Install, check, and update Claude Code skills
+# ABSTRACT: Install, check, and update bundled agent skills
 
 package App::karr::Cmd::Skill;
 our $VERSION = '0.004';
@@ -24,7 +24,8 @@ with 'App::karr::Role::Output';
 
 Installs and maintains the bundled C<karr> skill file for supported agent
 clients. The command can target project-local directories or global skill
-locations in the current user's home directory.
+locations in the current user's home directory, which makes it useful both for
+direct Perl installs and Docker-wrapped vendor usage.
 
 =head1 SUPPORTED AGENTS
 

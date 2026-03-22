@@ -21,9 +21,9 @@ with 'App::karr::Role::BoardAccess';
 
 =head1 DESCRIPTION
 
-Creates a new task file in the board task directory. The new task inherits
-defaults from F<karr/config.yml> and can be seeded with metadata such as
-priority, class of service, due date, tags, and body text.
+Creates a new task in the ref-backed board. The new task inherits defaults from
+the materialized board config and can be seeded with metadata such as priority,
+class of service, due date, tags, and body text.
 
 =head1 OPTIONS
 
@@ -117,7 +117,7 @@ sub execute {
   my $defaults = $config->data->{defaults} // {};
 
   my %task_args = (
-    id       => $config->next_id,
+    id       => $self->allocate_next_id,
     title    => $title,
     status   => $self->status   // $defaults->{status}   // 'backlog',
     priority => $self->priority // $defaults->{priority}  // 'medium',

@@ -20,9 +20,10 @@ with 'App::karr::Role::BoardAccess';
 
 =head1 DESCRIPTION
 
-Synchronises the local board directory with the Git refs used by C<karr>.
-Without flags it performs both directions: fetch and materialise refs locally,
-then serialise the local board back into refs and push them to the remote.
+Synchronises the C<refs/karr/*> namespace with the configured remote. Without
+flags it fetches the remote ref state and then pushes the local ref state back,
+pruning deleted refs so destructive restore operations can be mirrored
+correctly.
 
 =head1 OPTIONS
 
@@ -30,11 +31,11 @@ then serialise the local board back into refs and push them to the remote.
 
 =item * C<--pull>
 
-Only fetches and materialises remote C<refs/karr/*>.
+Only fetches remote C<refs/karr/*>.
 
 =item * C<--push>
 
-Only serialises local board state and pushes it to the configured remote.
+Only pushes local C<refs/karr/*> state to the configured remote.
 
 =back
 
@@ -47,7 +48,7 @@ sub execute {
     my ( $self, $args, $data ) = @_;
 
     require App::karr::Git;
-    my $git = App::karr::Git->new( dir => $self->board_dir->parent->stringify );
+    my $git = App::karr::Git->new( dir => $self->git_root->stringify );
 
     unless ( $git->is_repo ) {
         say "Not a git repository. Skipping sync.";
@@ -69,13 +70,9 @@ sub execute {
     unless ($push_only) {
         say "Pulling refs/karr/ from remote...";
         $git->pull;
-        say "Materializing board from refs...";
-        $self->_materialize_from_refs($git);
     }
 
     unless ($pull_only) {
-        say "Serializing board to refs...";
-        $self->_serialize_to_refs($git);
         say "Pushing refs/karr/ to remote...";
         $git->push;
     }

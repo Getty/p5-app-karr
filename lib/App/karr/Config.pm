@@ -9,18 +9,19 @@ use Path::Tiny;
 =head1 SYNOPSIS
 
     my $config = App::karr::Config->new(
-      file => path('karr/config.yml'),
+      file => path('/tmp/karr-materialized/config.yml'),
     );
 
     my @statuses = $config->statuses;
-    my $next_id  = $config->next_id;
 
 =head1 DESCRIPTION
 
 L<App::karr::Config> wraps the board configuration file and centralises access
-to derived values such as status names, priority order, WIP limits, and the
-next task id. It is used by command modules that need a structured view of
-F<karr/config.yml> instead of working with raw YAML hashes.
+to derived values such as status names, priority order, WIP limits, and merged
+effective defaults. It is used by command modules that need a structured view of
+the materialized board config instead of working with raw YAML hashes. In the
+ref-first architecture the canonical config lives in C<refs/karr/config>, while
+this class works with the temporary YAML file generated for a command run.
 
 =cut
 
@@ -79,6 +80,12 @@ sub claim_timeout {
   return $self->data->{claim_timeout} // '1h';
 }
 
+sub effective_config {
+  my ($class, $overrides, %args) = @_;
+  my $defaults = $class->default_config(%args);
+  return _merge_hashes($defaults, $overrides // {});
+}
+
 sub default_config {
   my ($class, %args) = @_;
   return {
@@ -112,8 +119,20 @@ sub default_config {
       priority => 'medium',
       class    => 'standard',
     },
-    next_id => 1,
   };
+}
+
+sub _merge_hashes {
+  my ($left, $right) = @_;
+  my %merged = %{$left // {}};
+  for my $key (keys %{$right // {}}) {
+    if (ref($merged{$key}) eq 'HASH' && ref($right->{$key}) eq 'HASH') {
+      $merged{$key} = _merge_hashes($merged{$key}, $right->{$key});
+    } else {
+      $merged{$key} = $right->{$key};
+    }
+  }
+  return \%merged;
 }
 
 1;
