@@ -106,7 +106,6 @@ sub _display_keys {
   push @out, ['defaults.status',    $d->{defaults}{status}]   if $d->{defaults}{status};
   push @out, ['defaults.priority',  $d->{defaults}{priority}] if $d->{defaults}{priority};
   push @out, ['defaults.class',     $d->{defaults}{class}]    if $d->{defaults}{class};
-  push @out, ['wip_limits',         $d->{wip_limits}]         if $d->{wip_limits};
   push @out, ['claim_timeout',      $d->{claim_timeout}];
   push @out, ['classes',            [map { $_->{name} } @{$d->{classes} // []}]];
   return @out;

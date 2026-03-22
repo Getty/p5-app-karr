@@ -116,19 +116,25 @@ sub execute {
 
   if ($self->compact) {
     for my $t (@tasks) {
-      printf "%3d  %-12s %-8s %s\n", $t->id, $t->status, $t->priority, $t->title;
+      printf "#%-4u %10s %s\n", $t->id, $t->status, $t->title;
     }
     return;
   }
 
-  # Table output
-  printf "%-4s %-12s %-8s %-10s %s\n", 'ID', 'Status', 'Priority', 'Assignee', 'Title';
-  printf "%s\n", '-' x 70;
+  printf "%-5s %10s %s\n", 'ID', 'STATUS', 'TITLE';
+  printf "%s\n", '-' x 72;
   for my $t (@tasks) {
-    printf "%-4d %-12s %-8s %-10s %s\n",
-      $t->id, $t->status, $t->priority,
-      ($t->has_assignee ? $t->assignee : '-'),
-      $t->title;
+    my @meta;
+    push @meta, $t->priority if defined $t->priority && length $t->priority;
+    push @meta, '@' . $t->assignee if $t->has_assignee;
+    push @meta, 'blocked' if $t->has_blocked;
+    my $title = $t->title;
+    $title .= ' [' . join(', ', @meta) . ']' if @meta;
+
+    printf "#%-4u %10s %s\n",
+      $t->id,
+      $t->status,
+      $title;
   }
   printf "\n%d task(s)\n", scalar @tasks;
 }

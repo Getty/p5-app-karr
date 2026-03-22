@@ -40,15 +40,9 @@ subtest 'effective config merges sparse overrides with defaults' => sub {
   is $effective->{claim_timeout}, '1h', 'missing scalar supplied by defaults';
 };
 
-subtest 'wip_limit' => sub {
-  my $dir = tempdir(CLEANUP => 1);
-  my $file = path($dir)->child('config.yml');
-  DumpFile($file->stringify, App::karr::Config->default_config);
-
-  my $config = App::karr::Config->new(file => $file);
-  is $config->wip_limit('in-progress'), 3;
-  is $config->wip_limit('review'), 2;
-  ok !defined $config->wip_limit('backlog');
+subtest 'default config has no wip limits' => sub {
+  my $config = App::karr::Config->default_config;
+  ok !exists $config->{wip_limits}, 'default config no longer defines wip limits';
 };
 
 done_testing;

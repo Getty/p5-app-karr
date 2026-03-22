@@ -24,8 +24,8 @@ with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 =head1 DESCRIPTION
 
 Renders a board-oriented summary grouped by status. The default output is a
-human-friendly terminal dashboard with colors, WIP counts, and task badges for
-claims, blocked state, and due dates. Compact and JSON modes are available for
+human-friendly terminal dashboard with colors and task badges for claims,
+blocked state, and due dates. Compact and JSON modes are available for
 automation and scripting.
 
 =head1 OUTPUT MODES
@@ -34,8 +34,8 @@ automation and scripting.
 
 =item * Default output
 
-Shows statuses in board order with task counts, WIP information, and a task
-summary under each populated column.
+Shows statuses in board order with task counts and a task summary under each
+populated column.
 
 =item * C<--compact>
 
@@ -50,13 +50,13 @@ per-status task lists.
 
 =cut
 
-my %STATUS_COLOR = (
-  backlog       => 'white',
-  todo          => 'cyan',
-  'in-progress' => 'yellow',
-  review        => 'magenta',
-  done          => 'green',
-  archived      => 'bright_black',
+my %STATUS_STYLE = (
+  backlog       => 'bold black on_white',
+  todo          => 'bold black on_cyan',
+  'in-progress' => 'bold black on_yellow',
+  review        => 'bold black on_white',
+  done          => 'bold black on_green',
+  archived      => 'bold white on_black',
 );
 
 my %PRIORITY_COLOR = (
@@ -90,13 +90,11 @@ sub execute {
     );
     for my $status (@statuses) {
       my $tasks_in_status = $by_status{$status} // [];
-      my $wip = $config->wip_limit($status);
       my %col = (
         status => $status,
         count  => scalar @$tasks_in_status,
         tasks  => [ map { $_->to_frontmatter } @$tasks_in_status ],
       );
-      $col{wip_limit} = $wip if $wip;
       push @{$board_data{columns}}, \%col;
     }
     $self->print_json(\%board_data);
@@ -114,7 +112,7 @@ sub execute {
   }
 
   my $board_name = $config->data->{board}{name} // 'Kanban Board';
-  my $title = colored(" $board_name ", 'bold white on_blue');
+  my $title = colored(" $board_name ", 'bold white on_black');
   print "\n $title\n\n";
 
   # Skip empty archived unless it has tasks
@@ -125,28 +123,15 @@ sub execute {
   my $has_tasks = 0;
   for my $status (@display_statuses) {
     my $tasks = $by_status{$status} // [];
-    my $wip = $config->wip_limit($status);
     my $count = scalar @$tasks;
-    my $color = $STATUS_COLOR{$status} // 'white';
+    my $style = $STATUS_STYLE{$status} // 'bold white on_black';
 
-    # Status header with count and optional WIP
     my $header = uc($status);
-    my $count_str;
-    if ($wip) {
-      my $over = $count > $wip;
-      $count_str = $over
-        ? colored("$count/$wip", 'bold red')
-        : "$count/$wip";
-    } else {
-      $count_str = "$count";
-    }
-    printf " %s %s\n", colored($header, "bold $color"), "[$count_str]";
+    printf " %s %s\n", colored(" $header ", $style), "[$count]";
 
     if (@$tasks) {
       $has_tasks = 1;
-      # Separator line
-      my $line = colored('─' x 50, $color);
-      print " $line\n";
+      print " " . ('-' x 52) . "\n";
       for my $t (@$tasks) {
         my $id_str = colored(sprintf('#%d', $t->id), 'bold');
         my $pri_color = $PRIORITY_COLOR{$t->priority} // 'white';

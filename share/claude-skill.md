@@ -89,7 +89,7 @@ Idempotent — archiving an already-archived task is a no-op.
 karr board
 ```
 
-Shows tasks grouped by status with WIP utilization.
+Shows tasks grouped by status.
 
 ### Pick next task (multi-agent)
 
@@ -228,9 +228,6 @@ statuses:
   - done
   - archived
 priorities: [low, medium, high, critical]
-wip_limits:
-  in-progress: 3
-  review: 2
 claim_timeout: 1h
 defaults:
   status: backlog

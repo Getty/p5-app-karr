@@ -152,7 +152,6 @@ karr log --agent $NAME
 - **Compact output** — `--compact` for agent-friendly one-liners
 - **Claim management** — claim timeouts, `--claimed-by` filter, require_claim enforcement
 - **Class of service** — expedite, fixed-date, standard, intangible priority ordering
-- **WIP limits** — per-status limits shown on board
 - **Agent skill bundle** — ships via File::ShareDir, installable via `karr skill install`
 - **Helper refs** — shared planning/spec blobs via `set-refs` and `get-refs`
 - **Docker-first** — `latest` auto-matches `/work` ownership, `user` stays fixed at build-time UID/GID

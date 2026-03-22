@@ -85,15 +85,6 @@ sub execute {
   my $blocked = grep { $_->has_blocked } @active_tasks;
   my $overdue = $self->_count_overdue(\@active_tasks, \%terminal);
 
-  # WIP warnings
-  my @wip_warnings;
-  for my $status (@statuses) {
-    my $limit = $config->wip_limit($status);
-    next unless $limit;
-    my $count = grep { $_->status eq $status } @active_tasks;
-    push @wip_warnings, "$status ($count/$limit)" if $count >= $limit;
-  }
-
   # Build sections
   my %wanted_sections;
   if ($self->sections) {
@@ -141,7 +132,6 @@ sub execute {
         active => $active,
         blocked => $blocked,
         overdue => $overdue,
-        (@wip_warnings ? (wip_warning => 'WIP limit reached: ' . join(', ', @wip_warnings)) : ()),
       },
       sections => \@section_data,
     };
@@ -150,7 +140,7 @@ sub execute {
   }
 
   # Render markdown
-  my $md = $self->_render_markdown($board_name, $total, $active, $blocked, $overdue, \@wip_warnings, \@section_data);
+  my $md = $self->_render_markdown($board_name, $total, $active, $blocked, $overdue, \@section_data);
 
   if ($self->write_to) {
     $self->_write_to_file($md);
@@ -160,14 +150,10 @@ sub execute {
 }
 
 sub _render_markdown {
-  my ($self, $board_name, $total, $active, $blocked, $overdue, $wip_warnings, $sections) = @_;
+  my ($self, $board_name, $total, $active, $blocked, $overdue, $sections) = @_;
   my $md = "<!-- BEGIN kanban-md context -->\n";
   $md .= "## Board: $board_name\n\n";
   $md .= "**$total tasks** | $active active | $blocked blocked | $overdue overdue\n\n";
-
-  if (@$wip_warnings) {
-    $md .= "> WIP limit reached: " . join(', ', @$wip_warnings) . "\n\n";
-  }
 
   my %section_title = (
     'in-progress'        => 'In Progress',

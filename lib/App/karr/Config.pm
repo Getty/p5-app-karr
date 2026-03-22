@@ -17,9 +17,9 @@ use Path::Tiny;
 =head1 DESCRIPTION
 
 L<App::karr::Config> wraps the board configuration file and centralises access
-to derived values such as status names, priority order, WIP limits, and merged
-effective defaults. It is used by command modules that need a structured view of
-the materialized board config instead of working with raw YAML hashes. In the
+to derived values such as status names, priority order, and merged effective
+defaults. It is used by command modules that need a structured view of the
+materialized board config instead of working with raw YAML hashes. In the
 ref-first architecture the canonical config lives in C<refs/karr/config>, while
 this class works with the temporary YAML file generated for a command run.
 
@@ -70,11 +70,6 @@ sub next_id {
   return $id;
 }
 
-sub wip_limit {
-  my ($self, $status) = @_;
-  return $self->data->{wip_limits}{$status};
-}
-
 sub claim_timeout {
   my ($self) = @_;
   return $self->data->{claim_timeout} // '1h';
@@ -103,10 +98,6 @@ sub default_config {
       'archived',
     ],
     priorities => [qw( low medium high critical )],
-    wip_limits => {
-      'in-progress' => 3,
-      'review' => 2,
-    },
     classes => [
       { name => 'expedite', wip_limit => 1, bypass_column_wip => 1 },
       { name => 'fixed-date' },
