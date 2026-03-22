@@ -14,16 +14,28 @@ cpanm App::karr
 
 ```bash
 # Pull from Docker Hub
-docker run --rm -it -v $(pwd):/work raudssus/karr --help
+docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr --help
 
-# Or use the latest tag
-docker run --rm -it -v $(pwd):/work raudssus/karr:latest --help
+# Explicit dynamic-runtime tag
+docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr:latest --help
+
+# Fixed non-root image (UID/GID 1000:1000)
+docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr:user --help
 ```
 
-**Recommended: Add an alias to your shell (with Git config for sync):**
+`raudssus/karr:latest` starts as root only long enough to inspect `/work`, then
+drops to the owner of the mounted project directory before running `karr`. That
+keeps task files and Git side effects owned by the host user in the common
+vendor-style workflow.
+
+`raudssus/karr:user` is the no-magic image. It is built with a fixed `karr`
+user at `1000:1000` by default, and is the better base if you want to derive
+your own UID-specific image in CI or a downstream repo.
+
+**Recommended alias for the dynamic `latest` image:**
 
 ```bash
-alias karr='docker run --rm -v $(pwd):/work -v $HOME/.gitconfig:/root/.gitconfig:ro raudssus/karr'
+alias karr='docker run --rm -it -w /work -e HOME=/home/karr -v "$(pwd):/work" -v "$HOME/.gitconfig:/home/karr/.gitconfig:ro" -v "$HOME/.codex:/home/karr/.codex" raudssus/karr:latest'
 ```
 
 Now use `karr` as if it were installed locally:
@@ -34,7 +46,25 @@ karr create "Fix login bug" --priority high
 karr list
 ```
 
-The `-v $(pwd):/work` mount ensures your `karr/` board directory is accessible inside the container.
+The `-v "$(pwd):/work"` mount makes the board visible in the container, and the
+`HOME=/home/karr` mount pattern keeps Git config and agent skills accessible
+after the image drops privileges.
+
+If you prefer the fixed `user` image, the equivalent alias is:
+
+```bash
+alias karr='docker run --rm -it -w /work -e HOME=/home/karr -v "$(pwd):/work" -v "$HOME/.gitconfig:/home/karr/.gitconfig:ro" -v "$HOME/.codex:/home/karr/.codex" raudssus/karr:user'
+```
+
+To build a custom fixed-user derivative, override the build args on the
+`runtime-user` target:
+
+```bash
+docker build --target runtime-user \
+  --build-arg KARR_UID=1010 \
+  --build-arg KARR_GID=1010 \
+  -t raudssus/karr:user1010 .
+```
 
 ## Quick start
 
@@ -113,8 +143,8 @@ karr log --agent $NAME
 - **Claim management** — claim timeouts, `--claimed-by` filter, require_claim enforcement
 - **Class of service** — expedite, fixed-date, standard, intangible priority ordering
 - **WIP limits** — per-status limits shown on board
-- **Claude Code skill** — ships via File::ShareDir, installable via `karr skill install`
-- **Docker-first** — `raudssus/karr` image with built-in git identity
+- **Agent skill bundle** — ships via File::ShareDir, installable via `karr skill install`
+- **Docker-first** — `latest` auto-matches `/work` ownership, `user` stays fixed at build-time UID/GID
 
 ## Task file format
 

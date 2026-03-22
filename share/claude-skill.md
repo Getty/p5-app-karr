@@ -1,7 +1,6 @@
 ---
 name: karr
-description: "karr CLI — Kanban Assignment & Responsibility Registry. Command reference, decision trees, and workflows for managing kanban tasks via the karr CLI tool."
-user-invocable: true
+description: Use when managing file-based kanban tasks or shared helper refs with the karr CLI in agent workflows.
 ---
 
 # karr — Kanban Assignment & Responsibility Registry
@@ -16,7 +15,7 @@ File-based kanban board for multi-agent workflows. Tasks are Markdown files with
 karr init [--name NAME] [--statuses s1,s2,s3] [--claude-skill]
 ```
 
-Creates `karr/` directory with `config.yml` and `tasks/`. Adds `karr/` to `.gitignore`. With `--claude-skill`, installs this skill to `.claude/skills/karr/SKILL.md`.
+Creates `karr/` directory with `config.yml` and `tasks/`. With `--claude-skill`, installs this skill to `.claude/skills/karr/SKILL.md`.
 
 ### Create task
 
@@ -146,6 +145,23 @@ karr skill show                              # print skill content to stdout
 
 Supported agents: `claude-code`, `codex`, `cursor`.
 
+For Docker-wrapped usage, prefer the `raudssus/karr:latest` alias that mounts
+the current project at `/work` and uses `/home/karr` as `HOME`, so the image
+can drop privileges to the owner of the mounted workspace without breaking
+access to Git config or agent skill directories.
+
+### Helper refs
+
+```bash
+karr set-refs superpowers/spec/1234.md draft ready
+karr get-refs superpowers/spec/1234.md
+```
+
+Stores and retrieves helper payloads in Git refs outside protected namespaces
+such as `refs/karr/*`, branches, and tags. Use this for shared planning blobs,
+agent scratch data, or similar workflow artifacts that should sync through Git
+without becoming task cards.
+
 ### Activity log
 
 ```bash
@@ -222,6 +238,7 @@ next_id: 1
 10. **Board snapshot for agent context?** → `karr context --write-to AGENTS.md`
 11. **Check/change config?** → `karr config` / `karr config set KEY VALUE`
 12. **Install agent skills?** → `karr skill install`
+13. **Need shared non-task workflow data?** → `karr set-refs` / `karr get-refs`
 
 ## Multi-agent workflow
 
@@ -241,3 +258,16 @@ karr move ID done
 ```
 
 Claims expire after the configured timeout (default: 1h). Statuses with `require_claim: true` enforce that moves include `--claim`.
+
+## Helper-ref workflow
+
+```bash
+# 1. Publish a shared planning blob
+karr set-refs superpowers/spec/1234.md initial draft ready for review
+
+# 2. Read it back elsewhere
+karr get-refs superpowers/spec/1234.md
+```
+
+Use helper refs for coordination data that should travel with Git but should
+not affect the board state itself.

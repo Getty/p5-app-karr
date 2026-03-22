@@ -33,7 +33,12 @@ the same task state without merging task files by hand.
 
 Perl remains the primary local installation path, but Docker is a first-class
 runtime option when you want to vendor the client into other environments. The
-README covers the Docker flow in detail, including the shell alias pattern.
+default C<raudssus/karr:latest> image starts as root, inspects the ownership of
+the mounted F</work> directory, and then runs C<karr> with those numeric
+credentials so host files do not become root-owned. A companion
+C<raudssus/karr:user> image stays fixed at build-time C<KARR_UID>/C<KARR_GID>
+defaults instead. The README covers both flows in detail, including the shell
+alias pattern.
 
 Besides the board itself, C<karr> can also store helper payloads in arbitrary
 non-protected refs such as C<refs/superpowers/spec/...>. This is aimed at
