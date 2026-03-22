@@ -27,6 +27,12 @@ like(
 
 like(
     join( '', @run_after_release ),
+    qr/release upload %v -R Getty\/p5-app-karr %a --clobber/,
+    'run_after_release uploads the documented release archive placeholder',
+);
+
+like(
+    join( '', @run_after_release ),
     qr/docker build .*--target runtime-root .*raudssus\/karr:%v .*raudssus\/karr:\$\(echo %v \| cut -d\. -f1\)/s,
     'run_after_release still builds versioned Docker tags from runtime-root',
 );
