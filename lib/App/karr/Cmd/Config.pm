@@ -13,6 +13,39 @@ use App::karr::Config;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr config
+    karr config get claim_timeout
+    karr config set board.name "New Board Name"
+    karr config --json
+
+=head1 DESCRIPTION
+
+Reads and updates the board configuration stored in F<karr/config.yml>. The
+command supports whole-file display, individual key lookup, and writes to a
+small set of explicitly writable keys.
+
+=head1 WRITABLE KEYS
+
+=over 4
+
+=item * C<board.name>, C<board.description>
+
+Human-facing board metadata.
+
+=item * C<defaults.status>, C<defaults.priority>, C<defaults.class>
+
+Default values applied by L<App::karr::Cmd::Create>.
+
+=item * C<claim_timeout>
+
+Claim expiry duration in C<Nh> or C<Nm> format.
+
+=back
+
+=cut
+
 my %WRITABLE = map { $_ => 1 } qw(
   board.name board.description
   defaults.status defaults.priority defaults.class

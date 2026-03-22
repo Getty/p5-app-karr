@@ -7,6 +7,14 @@ use Path::Tiny;
 use YAML::XS qw( LoadFile DumpFile );
 use Carp qw( croak );
 
+=head1 DESCRIPTION
+
+This role gives command objects a consistent way to find the current board,
+load tasks, read and write configuration, and synchronise local files with the
+Git ref backend. Most command modules in C<karr> compose this role.
+
+=cut
+
 has board_dir => (
   is => 'lazy',
 );

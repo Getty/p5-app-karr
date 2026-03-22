@@ -24,6 +24,8 @@ my @modules = qw(
   App::karr::Cmd::Context
   App::karr::Cmd::Skill
   App::karr::Cmd::Log
+  App::karr::Cmd::SetRefs
+  App::karr::Cmd::GetRefs
 );
 
 for my $mod (@modules) {

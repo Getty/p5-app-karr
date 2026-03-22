@@ -12,6 +12,34 @@ use App::karr::Role::BoardAccess;
 
 with 'App::karr::Role::BoardAccess';
 
+=head1 SYNOPSIS
+
+    karr sync
+    karr sync --pull
+    karr sync --push
+
+=head1 DESCRIPTION
+
+Synchronises the local board directory with the Git refs used by C<karr>.
+Without flags it performs both directions: fetch and materialise refs locally,
+then serialise the local board back into refs and push them to the remote.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * C<--pull>
+
+Only fetches and materialises remote C<refs/karr/*>.
+
+=item * C<--push>
+
+Only serialises local board state and pushes it to the configured remote.
+
+=back
+
+=cut
+
 option push => ( is => 'ro', default => 0, doc => 'Push refs to remote' );
 option pull => ( is => 'ro', default => 0, doc => 'Pull refs from remote' );
 

@@ -13,6 +13,30 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr delete 9
+    karr delete 9,10,11 --yes
+    karr delete 9 --json
+
+=head1 DESCRIPTION
+
+Deletes one or more task files from the board. This is the destructive
+alternative to L<App::karr::Cmd::Archive>, which only changes the status to
+C<archived>.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * C<--yes>
+
+Skips the interactive confirmation prompt for each task.
+
+=back
+
+=cut
+
 option yes => (
   is => 'ro',
   short => 'y',

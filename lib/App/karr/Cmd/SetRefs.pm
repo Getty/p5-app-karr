@@ -1,0 +1,55 @@
+# ABSTRACT: Store helper payloads in a Git ref
+
+package App::karr::Cmd::SetRefs;
+our $VERSION = '0.004';
+use Moo;
+use MooX::Cmd;
+use MooX::Options (
+  usage_string => 'USAGE: karr set-refs REF CONTENT...',
+);
+use App::karr::Git;
+
+=head1 SYNOPSIS
+
+    karr set-refs superpowers/spec/1234.md draft ready
+    karr set-refs refs/superpowers/spec/1234.md "full payload"
+
+=head1 DESCRIPTION
+
+Writes a helper payload into a free-form Git ref outside the protected board
+namespace. This is intended for adjunct workflow data such as AI planning
+artifacts or coordination hints that should sync through Git without becoming a
+task card.
+
+Like the rest of the Perl CLI, this works fine from a local install, and the
+same command can be run from the Docker wrapper if you prefer the vendored
+runtime style described in the README.
+
+=cut
+
+sub execute {
+  my ($self, $args_ref, $chain_ref) = @_;
+  my ($ref_input, @content_parts) = @$args_ref;
+  die "Usage: karr set-refs REF CONTENT...\n" unless defined $ref_input && @content_parts;
+
+  my $repo_dir = '.';
+  if ($chain_ref && @$chain_ref) {
+    my $root = $chain_ref->[0];
+    if ($root && $root->can('has_dir') && $root->has_dir) {
+      $repo_dir = $root->dir;
+    }
+  }
+
+  my $git = App::karr::Git->new(dir => $repo_dir);
+  die "Not a git repository.\n" unless $git->is_repo;
+
+  my $ref = $git->validate_helper_ref($ref_input);
+  my $content = join ' ', @content_parts;
+
+  $git->write_ref($ref, $content) or die "Failed to write $ref\n";
+  $git->push_ref($ref) or die "Failed to push $ref\n";
+
+  print STDERR "Stored $ref\n";
+}
+
+1;

@@ -13,6 +13,19 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr archive 4
+    karr archive 4,5,6 --json
+
+=head1 DESCRIPTION
+
+Soft-deletes tasks by moving them to the C<archived> status. The task file
+remains on disk, which keeps history and metadata intact while hiding the task
+from the default C<karr list> output.
+
+=cut
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 

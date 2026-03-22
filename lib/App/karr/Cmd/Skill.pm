@@ -12,6 +12,51 @@ use Path::Tiny;
 
 with 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr skill install
+    karr skill install --agent codex,cursor
+    karr skill check --global
+    karr skill update --force
+    karr skill show
+
+=head1 DESCRIPTION
+
+Installs and maintains the bundled C<karr> skill file for supported agent
+clients. The command can target project-local directories or global skill
+locations in the current user's home directory.
+
+=head1 SUPPORTED AGENTS
+
+The built-in agent targets are C<claude-code>, C<codex>, and C<cursor>. When
+C<--agent> is omitted, the command auto-detects available client directories and
+falls back to all known agents if nothing is detected.
+
+=head1 ACTIONS
+
+=over 4
+
+=item * C<install>
+
+Writes the current bundled skill file to the selected target locations.
+
+=item * C<check>
+
+Compares installed skill files with the bundled version and exits non-zero when
+one or more targets are outdated.
+
+=item * C<update>
+
+Refreshes existing installed copies in place.
+
+=item * C<show>
+
+Prints the bundled skill content to standard output.
+
+=back
+
+=cut
+
 option agent => (
   is => 'ro',
   format => 's',

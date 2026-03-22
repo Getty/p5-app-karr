@@ -13,6 +13,19 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr show 12
+    karr show 12 --json
+
+=head1 DESCRIPTION
+
+Shows the full details of a single task, including optional metadata such as
+tags, due date, estimate, claim state, and the Markdown body. This is the most
+complete human-readable view of an individual card.
+
+=cut
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
   my $id = $args_ref->[0] or die "Usage: karr show ID\n";

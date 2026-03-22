@@ -13,6 +13,46 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr list
+    karr list --status todo,in-progress --priority high,critical
+    karr list --claimed-by agent-fox --compact
+    karr list -s docker --json
+
+=head1 DESCRIPTION
+
+Lists tasks from the current board with optional filtering and sorting.
+Archived tasks are excluded by default so the output focuses on active work.
+Use C<--compact> for terse one-line output and C<--json> for machine-readable
+automation.
+
+=head1 FILTERS AND SORTING
+
+=over 4
+
+=item * C<--status>, C<--priority>
+
+Accept comma-separated lists and only return tasks matching one of the
+requested values.
+
+=item * C<--assignee>, C<--tag>, C<--claimed-by>
+
+Limit the result set to a specific assignee, tag, or claim owner.
+
+=item * C<-s>, C<--search>
+
+Performs a case-insensitive substring search across title, body, and tags.
+
+=item * C<--sort>, C<--reverse>
+
+Sort by C<id>, C<status>, C<priority>, C<created>, C<updated>, or C<due>, and
+optionally reverse the result order.
+
+=back
+
+=cut
+
 option status => (
   is => 'ro',
   format => 's',

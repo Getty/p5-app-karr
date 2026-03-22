@@ -13,6 +13,42 @@ use App::karr::Config;
 
 with 'App::karr::Role::BoardAccess';
 
+=head1 SYNOPSIS
+
+    karr create "Fix login bug"
+    karr create --title "Write release notes" --priority high --status todo
+    karr create --title "Review API" --tags docs,review --body "Check CLI help"
+
+=head1 DESCRIPTION
+
+Creates a new task file in the board task directory. The new task inherits
+defaults from F<karr/config.yml> and can be seeded with metadata such as
+priority, class of service, due date, tags, and body text.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * C<--title>
+
+Explicit task title. If omitted, the first positional argument is used.
+
+=item * C<--status>, C<--priority>, C<--class>
+
+Override the configured default lifecycle values for the new task.
+
+=item * C<--assignee>, C<--tags>, C<--due>, C<--estimate>
+
+Populate optional frontmatter fields at creation time.
+
+=item * C<--body>
+
+Adds Markdown body text below the YAML frontmatter.
+
+=back
+
+=cut
+
 option title => (
   is => 'ro',
   format => 's',

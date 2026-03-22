@@ -15,6 +15,44 @@ use Time::Piece;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output', 'App::karr::Role::ClaimTimeout';
 
+=head1 SYNOPSIS
+
+    karr pick --claim agent-fox
+    karr pick --claim agent-fox --status todo --move in-progress
+    karr pick --claim agent-fox --tags backend,urgent --json
+
+=head1 DESCRIPTION
+
+Selects the next available task for an agent, taking class of service,
+priority, blocked state, and claim expiry into account. When the board lives in
+a Git repository, the command also uses lock refs so concurrent agents do not
+pick the same task.
+
+=head1 SELECTION RULES
+
+=over 4
+
+=item * Eligible statuses
+
+If C<--status> is omitted, tasks in C<done> and C<archived> are excluded.
+
+=item * Claim timeout
+
+Already claimed tasks are ignored unless their claim timestamp has expired
+according to C<claim_timeout>.
+
+=item * Ordering
+
+Candidates are sorted by class of service, then by priority, then by task id.
+
+=item * C<--move>
+
+Optionally updates the picked task to a new status such as C<in-progress>.
+
+=back
+
+=cut
+
 option claim => (
   is => 'ro',
   format => 's',

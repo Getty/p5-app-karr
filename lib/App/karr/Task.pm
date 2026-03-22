@@ -8,6 +8,24 @@ use Path::Tiny;
 use Time::Piece;
 use JSON::MaybeXS qw( encode_json );
 
+=head1 SYNOPSIS
+
+    my $task = App::karr::Task->new(
+      id    => 1,
+      title => 'Fix login bug',
+    );
+
+    $task->save('karr/tasks');
+    my $same = App::karr::Task->from_file('karr/tasks/001-fix-login-bug.md');
+
+=head1 DESCRIPTION
+
+L<App::karr::Task> models a single task card and knows how to translate between
+the in-memory object and the Markdown plus YAML frontmatter format used on
+disk and in Git refs.
+
+=cut
+
 has id         => ( is => 'ro', required => 1 );
 has title      => ( is => 'rw', required => 1 );
 has status     => ( is => 'rw', default => sub { 'backlog' } );

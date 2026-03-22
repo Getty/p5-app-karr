@@ -5,6 +5,13 @@ our $VERSION = '0.004';
 use Moo::Role;
 use Time::Piece;
 
+=head1 DESCRIPTION
+
+Shared helper role for commands that need to interpret C<claim_timeout> values
+and determine whether an existing claim should still block other agents.
+
+=cut
+
 sub _parse_timeout {
     my ($self, $timeout_str) = @_;
     return 3600 unless $timeout_str;

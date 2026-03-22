@@ -6,6 +6,24 @@ use Moo;
 use YAML::XS qw( LoadFile DumpFile );
 use Path::Tiny;
 
+=head1 SYNOPSIS
+
+    my $config = App::karr::Config->new(
+      file => path('karr/config.yml'),
+    );
+
+    my @statuses = $config->statuses;
+    my $next_id  = $config->next_id;
+
+=head1 DESCRIPTION
+
+L<App::karr::Config> wraps the board configuration file and centralises access
+to derived values such as status names, priority order, WIP limits, and the
+next task id. It is used by command modules that need a structured view of
+F<karr/config.yml> instead of working with raw YAML hashes.
+
+=cut
+
 has file => ( is => 'ro', required => 1 );
 has data => ( is => 'lazy' );
 

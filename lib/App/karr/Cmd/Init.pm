@@ -11,6 +11,38 @@ use Path::Tiny;
 use YAML::XS qw( DumpFile );
 use App::karr::Config;
 
+=head1 SYNOPSIS
+
+    karr init --name "My Project"
+    karr init --statuses backlog,todo,in-progress,review,done
+    karr init --name "Client Work" --claude-skill
+
+=head1 DESCRIPTION
+
+Creates a new F<karr/> board in the current working directory. The command
+generates F<karr/config.yml>, creates the task directory, and can optionally
+install the bundled Claude Code skill into the repository.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * C<--name>
+
+Sets the board name stored in C<board.name>.
+
+=item * C<--statuses>
+
+Replaces the default status list with the comma-separated statuses you supply.
+
+=item * C<--claude-skill>
+
+Copies the bundled skill file to F<.claude/skills/karr/SKILL.md>.
+
+=back
+
+=cut
+
 option name => (
   is => 'ro',
   format => 's',

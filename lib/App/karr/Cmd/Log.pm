@@ -13,6 +13,38 @@ use JSON::MaybeXS qw( decode_json );
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr log
+    karr log --agent agent-fox
+    karr log --task 12 --last 50 --json
+
+=head1 DESCRIPTION
+
+Reads activity entries stored in C<refs/karr/log/*> and prints a merged view of
+recent actions. The command is only available when the board is inside a Git
+repository because the log lives in Git refs, not in local task files.
+
+=head1 FILTERS
+
+=over 4
+
+=item * C<--agent>
+
+Only show entries recorded for a specific agent.
+
+=item * C<--task>
+
+Only show entries associated with a specific task id.
+
+=item * C<--last>
+
+Limit the output to the most recent C<N> entries after sorting by timestamp.
+
+=back
+
+=cut
+
 option agent => (
     is => 'ro',
     format => 's',

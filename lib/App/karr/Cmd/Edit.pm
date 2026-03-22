@@ -13,6 +13,46 @@ use App::karr::Task;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr edit 5 --title "Updated title"
+    karr edit 5 --add-tag urgent --remove-tag stale
+    karr edit 5 -a "Waiting for review"
+    karr edit 5 --claim agent-fox --block "waiting on API"
+
+=head1 DESCRIPTION
+
+Updates one or more existing tasks in place. Use it to adjust metadata, append
+notes, manage tags, claim or release ownership, and mark tasks as blocked or
+unblocked without changing the task id.
+
+=head1 COMMON OPERATIONS
+
+=over 4
+
+=item * Metadata updates
+
+C<--title>, C<--status>, C<--priority>, C<--assignee>, and C<--due> replace
+existing values.
+
+=item * Body updates
+
+C<--body> replaces the entire body; C<-a>/C<--append-body> appends a new line
+to the existing body text.
+
+=item * Claims and blocking
+
+C<--claim> refreshes claim ownership and timestamp, C<--release> clears the
+claim, C<--block> records a blocking reason, and C<--unblock> removes it.
+
+=item * Tag management
+
+C<--add-tag> and C<--remove-tag> accept comma-separated lists.
+
+=back
+
+=cut
+
 option title => (
   is => 'ro',
   format => 's',

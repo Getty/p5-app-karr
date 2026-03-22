@@ -15,6 +15,41 @@ use Term::ANSIColor qw( colored );
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr board
+    karr board --compact
+    karr board --json
+
+=head1 DESCRIPTION
+
+Renders a board-oriented summary grouped by status. The default output is a
+human-friendly terminal dashboard with colors, WIP counts, and task badges for
+claims, blocked state, and due dates. Compact and JSON modes are available for
+automation and scripting.
+
+=head1 OUTPUT MODES
+
+=over 4
+
+=item * Default output
+
+Shows statuses in board order with task counts, WIP information, and a task
+summary under each populated column.
+
+=item * C<--compact>
+
+Prints one line per status in the form C<status(count): ids>.
+
+=item * C<--json>
+
+Emits the board name, total task count, and a structured C<columns> array with
+per-status task lists.
+
+=back
+
+=cut
+
 my %STATUS_COLOR = (
   backlog       => 'white',
   todo          => 'cyan',

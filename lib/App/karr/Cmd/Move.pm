@@ -14,6 +14,35 @@ use App::karr::Config;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr move 7 done
+    karr move 7 --next
+    karr move 7,8,9 in-progress --claim agent-fox
+
+=head1 DESCRIPTION
+
+Moves one or more tasks to a new status. The command understands explicit
+target statuses and relative movement via C<--next> or C<--prev>, and it
+enforces C<require_claim> when the destination status requires an owner.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * C<--next>, C<--prev>
+
+Advance or rewind relative to the status order defined in the board config.
+
+=item * C<--claim>
+
+Claim the task while moving it. This is commonly used for
+C<in-progress> or C<review> states.
+
+=back
+
+=cut
+
 option next => (
   is => 'ro',
   doc => 'Advance to next status',

@@ -15,6 +15,33 @@ use Time::Piece;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
+=head1 SYNOPSIS
+
+    karr context
+    karr context --sections blocked,overdue
+    karr context --write-to AGENTS.md --days 14
+    karr context --json
+
+=head1 DESCRIPTION
+
+Builds a concise board summary suitable for embedding into agent context files
+such as F<AGENTS.md>. The command can print Markdown directly, emit structured
+JSON, or update an existing file between sentinel comments.
+
+=head1 SECTIONS
+
+The generated context can include C<in-progress>, C<blocked>, C<overdue>, and
+C<recently-completed>. Use C<--sections> with a comma-separated list to limit
+the output to a subset.
+
+=head1 FILE UPDATE MODE
+
+When C<--write-to> is used, the command replaces the content between
+C<BEGIN kanban-md context> and C<END kanban-md context> if those sentinels are
+already present; otherwise it appends the generated block to the file.
+
+=cut
+
 option write_to => (
   is => 'ro',
   format => 's',

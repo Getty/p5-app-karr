@@ -5,6 +5,19 @@ our $VERSION = '0.004';
 use strict;
 use warnings;
 
+=head1 SYNOPSIS
+
+    my $lock = App::karr::Lock->new(git => $git);
+    my ($ok, $msg) = $lock->acquire(12, 'agent@example.com');
+
+=head1 DESCRIPTION
+
+L<App::karr::Lock> manages lightweight per-task locks stored in Git refs. It is
+used by commands such as C<karr pick> to avoid concurrent agents selecting the
+same task at the same time.
+
+=cut
+
 sub new {
     my ( $class, %args ) = @_;
     my $git = $args{git};

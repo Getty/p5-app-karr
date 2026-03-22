@@ -8,6 +8,19 @@ use MooX::Options (
   usage_string => 'USAGE: karr agentname',
 );
 
+=head1 SYNOPSIS
+
+    karr agentname
+    karr pick --claim "$(karr agentname)" --move in-progress
+
+=head1 DESCRIPTION
+
+Generates a random two-word, lowercase agent name joined by a hyphen. The
+command prefers the system dictionary when available and falls back to the
+built-in word list otherwise.
+
+=cut
+
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
