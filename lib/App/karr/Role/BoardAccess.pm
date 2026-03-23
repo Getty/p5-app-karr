@@ -1,7 +1,7 @@
 # ABSTRACT: Role providing board directory discovery and config access
 
 package App::karr::Role::BoardAccess;
-our $VERSION = '0.101';
+our $VERSION = '0.102';
 use Moo::Role;
 use Path::Tiny;
 use YAML::XS qw( LoadFile DumpFile );
