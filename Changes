@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+    - Fix CPAN smoker failures: skip git tests on old git (< 1.8.5, no -C flag)
+    - Fix skip() without SKIP block in t/11-git-impl.t (Test::More crash)
+    - Skip user.email test gracefully when not configured
+
 0.101     2026-03-23 03:02:05Z
 
 0.100     2026-03-23 01:50:27Z
