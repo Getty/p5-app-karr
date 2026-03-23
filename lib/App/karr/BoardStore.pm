@@ -27,6 +27,11 @@ It can merge sparse config overrides with code defaults, allocate numeric task
 ids through a dedicated metadata ref, and materialize or serialize temporary
 board views for command handlers that still work with files internally.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Git>, L<App::karr::Task>,
+L<App::karr::Config>
+
 =cut
 
 sub board_exists {

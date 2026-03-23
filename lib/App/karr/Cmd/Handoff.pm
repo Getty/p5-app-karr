@@ -47,6 +47,11 @@ Record a blocking reason and/or clear the claim immediately after the handoff.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Pick>, L<App::karr::Cmd::Move>,
+L<App::karr::Cmd::Edit>, L<App::karr::Cmd::Log>
+
 =cut
 
 option claim => (

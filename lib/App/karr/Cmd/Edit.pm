@@ -51,6 +51,11 @@ C<--add-tag> and C<--remove-tag> accept comma-separated lists.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Show>, L<App::karr::Cmd::Move>,
+L<App::karr::Cmd::Handoff>, L<App::karr::Cmd::List>
+
 =cut
 
 option title => (

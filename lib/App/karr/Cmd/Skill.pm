@@ -56,6 +56,11 @@ Prints the bundled skill content to standard output.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Init>,
+L<App::karr::Cmd::Context>, L<App::karr::Cmd::Config>
+
 =cut
 
 option agent => (

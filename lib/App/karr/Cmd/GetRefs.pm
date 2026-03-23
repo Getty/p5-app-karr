@@ -23,6 +23,11 @@ be composed into scripts or agent pipelines.
 This is especially useful for AI-oriented workflows that want shared spec or
 planning blobs without coupling them to the task board itself.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::SetRefs>,
+L<App::karr::Cmd::Backup>, L<App::karr::Git>
+
 =cut
 
 sub execute {

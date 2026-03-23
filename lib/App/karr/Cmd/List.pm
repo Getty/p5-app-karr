@@ -51,6 +51,11 @@ optionally reverse the result order.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Show>, L<App::karr::Cmd::Board>,
+L<App::karr::Cmd::Create>, L<App::karr::Cmd::Pick>
+
 =cut
 
 option status => (

@@ -35,6 +35,11 @@ Skips the interactive confirmation prompt for each task.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Archive>,
+L<App::karr::Cmd::Backup>, L<App::karr::Cmd::Destroy>
+
 =cut
 
 option yes => (

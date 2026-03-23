@@ -26,6 +26,11 @@ disk and in Git refs. The same Markdown document is stored in
 C<refs/karr/tasks/*/data> and in temporary task files that commands materialize
 while they run.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::BoardStore>, L<App::karr::Git>,
+L<App::karr::Config>
+
 =cut
 
 has id         => ( is => 'ro', required => 1 );

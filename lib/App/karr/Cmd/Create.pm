@@ -47,6 +47,11 @@ Adds Markdown body text below the YAML frontmatter.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::List>, L<App::karr::Cmd::Show>,
+L<App::karr::Cmd::Edit>, L<App::karr::Cmd::Move>
+
 =cut
 
 option title => (

@@ -45,6 +45,11 @@ Claim expiry duration in C<Nh> or C<Nm> format.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Init>, L<App::karr::Cmd::Create>,
+L<App::karr::Cmd::Context>, L<App::karr::Config>
+
 =cut
 
 my %WRITABLE = map { $_ => 1 } qw(

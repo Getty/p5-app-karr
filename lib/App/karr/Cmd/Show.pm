@@ -24,6 +24,11 @@ Shows the full details of a single task, including optional metadata such as
 tags, due date, estimate, claim state, and the Markdown body. This is the most
 complete human-readable view of an individual card.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::List>, L<App::karr::Cmd::Edit>,
+L<App::karr::Cmd::Move>, L<App::karr::Cmd::Archive>
+
 =cut
 
 sub execute {

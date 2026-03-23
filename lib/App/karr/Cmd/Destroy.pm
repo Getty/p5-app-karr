@@ -33,6 +33,11 @@ Required acknowledgement for the destructive board removal.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Backup>,
+L<App::karr::Cmd::Restore>, L<App::karr::Cmd::Init>
+
 =cut
 
 option yes => (

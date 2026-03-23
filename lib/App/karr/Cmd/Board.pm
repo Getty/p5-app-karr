@@ -48,6 +48,11 @@ per-status task lists.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::List>, L<App::karr::Cmd::Show>,
+L<App::karr::Cmd::Pick>, L<App::karr::Cmd::Context>
+
 =cut
 
 my %STATUS_STYLE = (

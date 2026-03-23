@@ -33,6 +33,11 @@ Write the YAML snapshot to the given file instead of standard output.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Restore>,
+L<App::karr::Cmd::Destroy>, L<App::karr::Cmd::Sync>
+
 =cut
 
 option output => (

@@ -1,13 +1,56 @@
-# App::karr — Kanban Assignment & Responsibility Registry
+# App::karr
 
-A Git-native kanban board CLI for multi-agent workflows. Board state lives in
-`refs/karr/*`, so multiple AI agents can pick, claim, hand off, back up, and
-restore work across machines using normal Git transport without checking a
-persistent `karr/` directory into the repository.
+Git-native kanban for shared helper agents, human operators, and downstream
+repos that want a board without checking a board directory into the work tree.
+
+`karr` keeps canonical state in `refs/karr/*`, not in commits, branches, or a
+persistent `karr/` folder. Tasks, config, logs, snapshots, and helper refs move
+through normal Git transport, which makes the tool fit naturally into AI-heavy
+and multi-machine workflows.
+
+## Why it exists
+
+Most task tools assume a central web service or a checked-in file tree.
+`karr` takes a different route:
+
+- board state lives in Git refs
+- mutating commands pull, materialize, write back, and push
+- tasks stay separate from branches and commits
+- downstream projects can vendor the CLI through Docker and keep the exact same UX
+
+That gives you a shared board with far fewer file-level collisions and without
+having to bolt on another ticket system just to coordinate agents.
+
+## Quick start
+
+Inside an existing Git repository:
+
+```bash
+karr init --name "My Project"
+karr create "Fix login bug" --priority high
+karr list
+karr board
+```
+
+Claim and progress work:
+
+```bash
+NAME=$(karr agentname)
+karr pick --claim "$NAME" --status todo --move in-progress
+karr handoff 1 --claim "$NAME" --note "Ready for review" --timestamp
+```
+
+Protect yourself before destructive operations:
+
+```bash
+karr backup > karr-backup.yml
+karr restore --yes < karr-backup.yml
+karr destroy --yes
+```
 
 ## Installation
 
-### Perl (local)
+### Perl
 
 ```bash
 cpanm App::karr
@@ -15,53 +58,47 @@ cpanm App::karr
 
 ### Docker
 
-```bash
-# Pull from Docker Hub
-docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr --help
+The published images are:
 
-# Explicit dynamic-runtime tag
+- `raudssus/karr:latest`
+- `raudssus/karr:user`
+
+`latest` is the ergonomic default. It starts as root only long enough to inspect
+`/work`, then drops to the owner of the mounted workspace before running
+`karr`. That keeps host files from becoming root-owned.
+
+`user` is the fixed-user image. It defaults to `1000:1000` and is the better
+base when you want a deterministic downstream derivative.
+
+Minimal smoke test:
+
+```bash
 docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr:latest --help
-
-# Fixed non-root image (UID/GID 1000:1000)
-docker run --rm -it -w /work -v "$(pwd):/work" raudssus/karr:user --help
 ```
 
-`raudssus/karr:latest` starts as root only long enough to inspect `/work`, then
-drops to the owner of the mounted project directory before running `karr`. That
-keeps task files and Git side effects owned by the host user in the common
-vendor-style workflow.
-
-`raudssus/karr:user` is the no-magic image. It is built with a fixed `karr`
-user at `1000:1000` by default, and is the better base if you want to derive
-your own UID-specific image in CI or a downstream repo.
-
-**Recommended alias for the dynamic `latest` image:**
+Recommended alias for real use:
 
 ```bash
-alias karr='docker run --rm -it -w /work -e HOME=/home/karr -v "$(pwd):/work" -v "$HOME/.gitconfig:/home/karr/.gitconfig:ro" -v "$HOME/.codex:/home/karr/.codex" raudssus/karr:latest'
+alias karr='docker run --rm -it \
+  -w /work \
+  -e HOME=/home/karr \
+  -v "$(pwd):/work" \
+  -v "$HOME/.gitconfig:/home/karr/.gitconfig:ro" \
+  -v "$HOME/.claude:/home/karr/.claude" \
+  -v "$HOME/.codex:/home/karr/.codex" \
+  -v "$HOME/.cursor:/home/karr/.cursor" \
+  raudssus/karr:latest'
 ```
 
-Now use `karr` as if it were installed locally:
+With that alias, all normal commands stay identical:
 
 ```bash
-karr init --name "My Project"      # inside a Git repository
+karr init --name "HandyIntelligence Prototype" --claude-skill
 karr skill install --agent codex --global --force
-karr create "Fix login bug" --priority high
-karr list
+karr create "Document release workflow"
 ```
 
-The `-v "$(pwd):/work"` mount makes the board visible in the container, and the
-`HOME=/home/karr` mount pattern keeps Git config and agent skills accessible
-after the image drops privileges.
-
-If you prefer the fixed `user` image, the equivalent alias is:
-
-```bash
-alias karr='docker run --rm -it -w /work -e HOME=/home/karr -v "$(pwd):/work" -v "$HOME/.gitconfig:/home/karr/.gitconfig:ro" -v "$HOME/.codex:/home/karr/.codex" raudssus/karr:user'
-```
-
-To build a custom fixed-user derivative, override the build args on the
-`runtime-user` target:
+If you want a custom fixed-user image in CI or a downstream repo:
 
 ```bash
 docker build --target runtime-user \
@@ -70,97 +107,170 @@ docker build --target runtime-user \
   -t raudssus/karr:user1010 .
 ```
 
-## Quick start
+## How it works
 
-```bash
-karr init --name "My Project"       # inside an existing Git repository
-karr create "Fix login bug" --priority high
-karr list
-karr board
-karr backup > karr-backup.yml
+The write path is intentionally simple:
+
+```text
+fetch refs -> materialize temp board -> change task/config -> serialize to refs -> push
 ```
 
-## Commands
+Important refs:
 
-| Command | Description |
-|---------|-------------|
-| `init` | Initialize a new board |
-| `create` | Create a new task |
-| `list` | List tasks with filtering and sorting |
-| `show` | Show full task details |
-| `move` | Change task status (`--next`, `--prev`, or explicit) |
-| `edit` | Modify task fields, tags, claims, blocks |
-| `delete` | Delete a task |
-| `archive` | Soft-delete (move to archived) |
-| `board` | Show board summary by status |
-| `pick` | Atomically find and claim next available task |
-| `handoff` | Hand off task to review with notes |
-| `config` | View/modify board configuration |
-| `context` | Generate markdown summary for agent embedding |
-| `backup` | Export all `refs/karr/*` as YAML |
-| `restore` | Replace `refs/karr/*` from YAML (`--yes` required) |
-| `sync` | Sync board with remote (Git refs/karr/*) |
-| `log` | Show activity log (filtered by agent/task) |
-| `skill` | Install/check/update bundled agent skills |
-| `agentname` | Generate random two-word agent name |
-| `set-refs` | Store helper payloads in free-form Git refs |
-| `get-refs` | Fetch helper payloads from free-form Git refs |
+- `refs/karr/config` holds sparse YAML config overrides
+- `refs/karr/meta/next-id` holds the next numeric task id
+- `refs/karr/tasks/<id>/data` holds task Markdown plus frontmatter
+- `refs/karr/log/<agent>` holds append-style JSON log lines
 
-## Git Sync (core feature)
+This means the repository stays Git-only and the board remains ref-first even
+when commands internally use temporary files for convenience.
 
-Board state lives in `refs/karr/*` — not in branches or commits. Every write command automatically syncs:
+## Command map
 
-```
-fetch refs → materialize temp files → apply change → serialize to refs → push
-```
+### Board lifecycle
 
-Multiple agents on different machines see each other's changes via `git push/fetch`. No merge conflicts from a shared checked-in board tree — each task has its own ref, and locks prevent simultaneous edits.
+| Command | Use it for |
+|---------|------------|
+| `karr init` | create the board in `refs/karr/*` |
+| `karr config` | inspect and change merged board settings |
+| `karr backup` | export the whole board as YAML |
+| `karr restore --yes` | replace the board from a YAML snapshot |
+| `karr destroy --yes` | remove the board completely |
+| `karr sync` | explicitly pull/push board refs |
 
-```bash
-karr sync              # full sync (pull + push)
-karr sync --pull       # pull only
-karr sync --push       # push only
-```
+### Task lifecycle
+
+| Command | Use it for |
+|---------|------------|
+| `karr create` | create a task |
+| `karr list` | filter and search tasks |
+| `karr show` | inspect one task in full |
+| `karr edit` | update body, metadata, claim, or blocked state |
+| `karr move` | change status explicitly or with `--next` / `--prev` |
+| `karr archive` | soft-delete into `archived` |
+| `karr delete` | permanently remove the task ref |
+
+### Flow and coordination
+
+| Command | Use it for |
+|---------|------------|
+| `karr board` | grouped board view |
+| `karr pick` | atomic next-task selection with claim |
+| `karr handoff` | move into review and append a note |
+| `karr context` | generate agent-facing board summary |
+| `karr log` | inspect per-agent or per-task activity |
+| `karr agentname` | generate short claim names |
+
+### Skills and helper refs
+
+| Command | Use it for |
+|---------|------------|
+| `karr skill install` | install bundled skills for Claude Code, Codex, or Cursor |
+| `karr skill check` | detect outdated installed skills |
+| `karr skill update` | refresh installed skills |
+| `karr set-refs` | store shared non-task payloads in allowed refs |
+| `karr get-refs` | fetch helper payloads back out |
 
 ## Multi-agent workflow
 
 ```bash
-# Agent picks highest-priority unclaimed task
 NAME=$(karr agentname)
-karr pick --claim $NAME --status todo --move in-progress --json
 
-# Agent works on the task...
+# pick the best available task
+karr pick --claim "$NAME" --status todo --move in-progress
 
-# Hand off for review
-karr handoff 1 --claim $NAME --note "Implementation complete" --timestamp
+# inspect board state
+karr board
+karr list --claimed-by "$NAME"
 
-# Check what I'm working on
-karr list --claimed-by $NAME --status in-progress
+# hand off to review
+karr handoff 1 --claim "$NAME" --note "Implementation complete" --timestamp
 
-# View activity log
-karr log --agent $NAME
+# inspect activity trail
+karr log --agent "$NAME"
 ```
 
-## Features
+`pick` respects blocked state, claim timeout, and class-of-service ordering:
 
-- **Git-native sync** — board state in `refs/karr/*`, syncs via `git push/fetch`
-- **Atomic pick with locking** — `pick` uses git ref locks to prevent race conditions
-- **Snapshot backup/restore** — export all board refs as YAML and restore them explicitly with `--yes`
-- **Activity log** — every mutation recorded, per-agent, queryable via `karr log`
-- **Batch operations** — `karr move 1,2,3 done`, `karr archive 4,5,6`
-- **JSON output** — `--json` on all commands for machine consumption
-- **Compact output** — `--compact` for agent-friendly one-liners
-- **Claim management** — claim timeouts, `--claimed-by` filter, require_claim enforcement
-- **Class of service** — expedite, fixed-date, standard, intangible priority ordering
-- **Agent skill bundle** — ships via File::ShareDir, installable via `karr skill install`
-- **Helper refs** — shared planning/spec blobs via `set-refs` and `get-refs`
-- **Docker-first** — `latest` auto-matches `/work` ownership, `user` stays fixed at build-time UID/GID
+- `expedite`
+- `fixed-date`
+- `standard`
+- `intangible`
 
-## Stored task format
+## Helper refs
 
-Tasks are stored as Markdown payloads under `refs/karr/tasks/*/data`. When
-`karr` materializes a temporary working view during a command, each task looks
-like this:
+Not all shared workflow state belongs in tasks. `karr` also supports arbitrary
+non-protected refs outside `refs/karr/*`.
+
+```bash
+karr set-refs superpowers/spec/1234.md draft ready
+karr get-refs superpowers/spec/1234.md
+```
+
+Use this for:
+
+- planning blobs
+- generated specs
+- agent scratch state
+- workflow metadata you want synced through Git but not modeled as cards
+
+Protected namespaces such as branches, tags, remotes, stash, and `refs/karr/*`
+are blocked.
+
+## Skills
+
+The distribution ships a bundled `karr` skill that can be installed locally in
+a repo or globally in the current home directory.
+
+```bash
+karr skill install
+karr skill install --agent claude-code
+karr skill install --agent codex --global --force
+karr skill check --global
+karr skill update
+```
+
+Supported targets:
+
+- `claude-code`
+- `codex`
+- `cursor`
+
+Project-local Claude installation during board setup:
+
+```bash
+karr init --name "My Project" --claude-skill
+```
+
+## Board snapshots and destructive operations
+
+Backups are full YAML snapshots of `refs/karr/*`:
+
+```bash
+karr backup > karr-backup.yml
+```
+
+Restore is intentionally destructive:
+
+```bash
+karr restore --yes < karr-backup.yml
+```
+
+It deletes current `refs/karr/*` refs first and then replays the snapshot.
+
+Full board removal is explicit too:
+
+```bash
+karr destroy --yes
+```
+
+If a remote exists, `restore` and `destroy` also prune the remote board state
+to match.
+
+## Stored task shape
+
+Tasks live in `refs/karr/tasks/*/data`, but the payload itself is ordinary
+Markdown with YAML frontmatter:
 
 ```markdown
 ---
@@ -169,7 +279,7 @@ title: Fix login bug
 status: in-progress
 priority: high
 class: standard
-claimed_by: agent-1
+claimed_by: agent-fox
 created: 2026-03-12T10:00:00Z
 updated: 2026-03-12T10:00:00Z
 ---
@@ -177,27 +287,50 @@ updated: 2026-03-12T10:00:00Z
 Task description here.
 ```
 
-The board config is stored separately in `refs/karr/config` as sparse YAML
-overrides, while `refs/karr/meta/next-id` holds the next numeric task id.
+That makes the format easy to inspect, script, and reuse from Perl code.
 
-## Backup and restore
+## Programmatic usage
 
-```bash
-karr backup > karr-backup.yml
-karr restore --yes < karr-backup.yml
+`karr` is primarily a CLI, but the lower-level modules are usable from Perl:
+
+```perl
+use App::karr::Git;
+use App::karr::BoardStore;
+
+my $git = App::karr::Git->new(dir => '.');
+my $store = App::karr::BoardStore->new(git => $git);
+
+my $config = $store->load_config;
+my @tasks  = $store->load_tasks;
 ```
 
-`restore` is intentionally destructive. It replaces the whole `refs/karr/*`
-namespace and deletes refs that are not present in the backup payload.
+Or create a task directly:
 
-## AI and Docker usage
+```perl
+use App::karr::Task;
 
-Perl remains the primary local runtime, but the Docker alias is equally usable
-when another repository wants to vendor `karr` instead of installing it. The
-CLI surface stays the same, so agent-oriented flows like `pick`, `handoff`,
-`context`, `backup`, `restore`, `set-refs`, and `skill install` work the same
-way behind the alias.
+my $task = App::karr::Task->new(
+  id       => $store->allocate_next_id,
+  title    => 'Write release notes',
+  status   => 'backlog',
+  priority => 'high',
+);
+
+$store->save_task($task);
+$git->push;
+```
+
+## Why Docker matters here
+
+Perl installation is the normal local path, but Docker is equally valid when a
+downstream repo wants to vendor `karr` instead of adding a direct Perl tool
+dependency. That keeps the command surface identical across:
+
+- local Perl installs
+- Codex/Claude/Cursor-heavy repos
+- CI or ops environments that prefer containerized tooling
 
 ## License
 
-This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.
+This is free software; you can redistribute it and/or modify it under the same
+terms as the Perl 5 programming language system itself.

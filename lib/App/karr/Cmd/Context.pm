@@ -40,6 +40,11 @@ When C<--write-to> is used, the command replaces the content between
 C<BEGIN kanban-md context> and C<END kanban-md context> if those sentinels are
 already present; otherwise it appends the generated block to the file.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Board>, L<App::karr::Cmd::List>,
+L<App::karr::Cmd::Config>, L<App::karr::Cmd::Skill>
+
 =cut
 
 option write_to => (

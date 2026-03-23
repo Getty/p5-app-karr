@@ -22,6 +22,11 @@ L<App::karr::Git> provides the low-level Git interface used by C<karr> for
 syncing board state through C<refs/karr/*>. It can store task content and board
 configuration as Git objects without relying on regular commits or branches.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::BoardStore>, L<App::karr::Task>,
+L<App::karr::Config>
+
 =cut
 
 sub new {

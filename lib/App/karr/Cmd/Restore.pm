@@ -37,6 +37,11 @@ Required acknowledgement for the destructive restore operation.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Backup>,
+L<App::karr::Cmd::Destroy>, L<App::karr::Cmd::Sync>
+
 =cut
 
 option input => (

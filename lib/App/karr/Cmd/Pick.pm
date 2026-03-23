@@ -51,6 +51,11 @@ Optionally updates the picked task to a new status such as C<in-progress>.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::List>, L<App::karr::Cmd::Move>,
+L<App::karr::Cmd::Handoff>, L<App::karr::Cmd::AgentName>
+
 =cut
 
 option claim => (

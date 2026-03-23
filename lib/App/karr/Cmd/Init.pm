@@ -42,6 +42,11 @@ Copies the bundled skill file to F<.claude/skills/karr/SKILL.md>.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Config>,
+L<App::karr::Cmd::Create>, L<App::karr::Cmd::Skill>
+
 =cut
 
 option name => (

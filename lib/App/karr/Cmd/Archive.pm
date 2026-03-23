@@ -24,6 +24,11 @@ Soft-deletes tasks by moving them to the C<archived> status. The task file
 remains on disk, which keeps history and metadata intact while hiding the task
 from the default C<karr list> output.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::List>, L<App::karr::Cmd::Show>,
+L<App::karr::Cmd::Delete>, L<App::karr::Cmd::Board>
+
 =cut
 
 sub execute {

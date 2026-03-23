@@ -43,6 +43,11 @@ Limit the output to the most recent C<N> entries after sorting by timestamp.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Handoff>, L<App::karr::Cmd::Show>,
+L<App::karr::Cmd::Board>, L<App::karr::Cmd::AgentName>
+
 =cut
 
 option agent => (

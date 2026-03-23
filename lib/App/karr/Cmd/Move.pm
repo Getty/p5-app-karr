@@ -41,6 +41,11 @@ C<in-progress> or C<review> states.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Show>, L<App::karr::Cmd::Edit>,
+L<App::karr::Cmd::Pick>, L<App::karr::Cmd::Handoff>
+
 =cut
 
 option next => (

@@ -25,6 +25,11 @@ Like the rest of the Perl CLI, this works fine from a local install, and the
 same command can be run from the Docker wrapper if you prefer the vendored
 runtime style described in the README.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::GetRefs>,
+L<App::karr::Cmd::Backup>, L<App::karr::Git>
+
 =cut
 
 sub execute {

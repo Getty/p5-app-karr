@@ -39,6 +39,11 @@ Only pushes local C<refs/karr/*> state to the configured remote.
 
 =back
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Board>,
+L<App::karr::Cmd::Backup>, L<App::karr::Cmd::Restore>
+
 =cut
 
 option push => ( is => 'ro', default => 0, doc => 'Push refs to remote' );

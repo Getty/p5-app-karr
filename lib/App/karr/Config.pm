@@ -23,6 +23,11 @@ materialized board config instead of working with raw YAML hashes. In the
 ref-first architecture the canonical config lives in C<refs/karr/config>, while
 this class works with the temporary YAML file generated for a command run.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::BoardStore>, L<App::karr::Task>,
+L<App::karr::Git>
+
 =cut
 
 has file => ( is => 'ro', required => 1 );

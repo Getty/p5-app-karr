@@ -19,6 +19,11 @@ Generates a random two-word, lowercase agent name joined by a hyphen. The
 command prefers the system dictionary when available and falls back to the
 built-in word list otherwise.
 
+=head1 SEE ALSO
+
+L<karr>, L<App::karr>, L<App::karr::Cmd::Pick>, L<App::karr::Cmd::Handoff>,
+L<App::karr::Cmd::Log>
+
 =cut
 
 sub execute {

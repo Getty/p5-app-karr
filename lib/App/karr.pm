@@ -10,7 +10,7 @@ use App::karr::Role::BoardAccess;
 
 with 'App::karr::Role::BoardAccess';
 
-=head1 SYNOPSIS
+=synopsis
 
     karr init --name "My Project"
     karr create "Fix login bug" --priority high
@@ -19,57 +19,124 @@ with 'App::karr::Role::BoardAccess';
     karr set-refs superpowers/spec/1234.md draft ready
     karr get-refs superpowers/spec/1234.md
 
-=head1 DESCRIPTION
+=description
 
-L<App::karr> is the main entry point for the C<karr> command line tool. It
-manages a Git-native kanban board stored in C<refs/karr/*>. Tasks are kept as
-Markdown payloads inside Git refs, while commands materialize a temporary board
-view only for the duration of each operation.
+L<App::karr> is the central module behind the L<karr> command line client. The
+distribution manages a Git-native kanban board stored in C<refs/karr/*>, where
+task cards are Markdown payloads and board configuration is sparse YAML kept in
+refs rather than in checked-in work tree files.
 
-The CLI is designed for local use and for multi-agent workflows backed by Git
-refs. Commands that mutate board state synchronize through C<refs/karr/*>, so
-multiple machines or agents can see the same task state without merging task
-files by hand and without checking a persistent F<karr/> directory into the
-repository.
+The distribution is intended for repositories that want Git to remain the
+transport and source of truth. Commands materialize a temporary board view only
+for the lifetime of a command, then serialize changes back into refs and push
+them onward. This keeps the repository free of a persistent F<karr/> board tree
+and avoids ordinary file-level merge conflicts for shared task state.
 
-Perl remains the primary local installation path, but Docker is a first-class
-runtime option when you want to vendor the client into other environments. The
-default C<raudssus/karr:latest> image starts as root, inspects the ownership of
-the mounted F</work> directory, and then runs C<karr> with those numeric
-credentials so host files do not become root-owned. A companion
-C<raudssus/karr:user> image stays fixed at build-time C<KARR_UID>/C<KARR_GID>
-defaults instead. The README covers both flows in detail, including the shell
-alias pattern.
+This module gives the architectural overview. If you want day-to-day command
+usage, command groups, and command-by-command navigation, start with L<karr>.
 
-Besides the board itself, C<karr> can also store helper payloads in arbitrary
-non-protected refs such as C<refs/superpowers/spec/...>. This is aimed at
-AI-assisted and agent-style workflows where lightweight shared state is useful
-without changing the task model.
-
-=head1 COMMAND OVERVIEW
+=head1 ARCHITECTURE
 
 =over 4
 
-=item * C<init>, C<config>, C<context>, C<backup>, C<restore>, C<skill>
+=item * C<refs/karr/config>
 
-Board bootstrap, configuration, context generation, backup and restore, and
-shipped skill installation.
+Sparse board configuration overrides layered onto code defaults from
+L<App::karr::Config>.
 
-=item * C<create>, C<list>, C<show>, C<edit>, C<move>, C<delete>, C<archive>
+=item * C<refs/karr/meta/next-id>
 
-Day-to-day task lifecycle management.
+Dedicated metadata ref for numeric id allocation.
 
-=item * C<board>, C<pick>, C<handoff>, C<destroy>, C<log>, C<sync>, C<agentname>
+=item * C<refs/karr/tasks/*/data>
 
-Board visualisation, multi-agent coordination, activity inspection, Git sync,
-board teardown, and helper utilities.
+Task payloads stored in the same Markdown plus YAML frontmatter shape used by
+L<App::karr::Task>.
 
-=item * C<set-refs>, C<get-refs>
+=item * C<refs/karr/log/*>
 
-Store and retrieve helper payloads in free-form Git refs outside the protected
-board namespace.
+Append-style activity log entries written as per-agent JSON lines.
 
 =back
+
+L<App::karr::Git> provides the low-level Git ref operations, while
+L<App::karr::BoardStore> handles the higher-level board model: merged config,
+task loading, materialization, serialization, snapshots, and restore.
+
+=head1 CLI ENTRY POINT
+
+The installed executable is L<karr>. Running C<karr> without a subcommand shows
+the board summary by default, and the command-specific modules under
+C<App::karr::Cmd::*> implement the individual operations.
+
+Use L<karr> when you want to learn:
+
+=over 4
+
+=item * which command to run for a task
+
+=item * how backup, restore, destroy, and helper refs fit together
+
+=item * which module implements each subcommand
+
+=item * how to use the Docker-wrapped CLI day to day
+
+=back
+
+=head1 DOCKER RUNTIME
+
+Perl installation remains the normal development path, but Docker is a
+first-class runtime option for vendoring C<karr> into other repositories or
+tooling environments.
+
+The default C<raudssus/karr:latest> image starts as root only long enough to
+inspect the mounted F</work> directory and then drops to the matching numeric
+uid and gid before running C<karr>. This prevents root-owned project files when
+the image is used through a shell alias. The companion C<raudssus/karr:user>
+image is the fixed-user variant for environments that prefer a predictable
+non-root runtime without that auto-adjustment.
+
+See L<karr> and F<README.md> for the shell alias form and operator-focused
+examples.
+
+=head1 PROGRAMMATIC USAGE
+
+Although the distribution is centered on the CLI, the lower-level modules are
+usable from Perl when you want to inspect or manipulate board refs directly.
+
+Reading the current board state:
+
+    use App::karr::Git;
+    use App::karr::BoardStore;
+
+    my $git = App::karr::Git->new(dir => '.');
+    my $store = App::karr::BoardStore->new(git => $git);
+
+    my $config = $store->load_config;
+    my @tasks  = $store->load_tasks;
+
+Creating a task and writing it back:
+
+    use App::karr::Task;
+
+    my $id = $store->allocate_next_id;
+    my $task = App::karr::Task->new(
+      id       => $id,
+      title    => 'Document the release process',
+      status   => 'backlog',
+      priority => 'high',
+    );
+
+    $store->save_task($task);
+    $git->push;
+
+Taking a full board snapshot for export logic:
+
+    my $snapshot = $store->snapshot;
+
+These modules are more appropriate for Perl automation than instantiating
+L<App::karr> itself, which mainly exists as the MooX::Cmd dispatcher for the
+CLI.
 
 =head1 BOARD DISCOVERY
 
@@ -81,6 +148,11 @@ the starting directory used for that repository discovery.
 
 Running C<karr> without a subcommand shows the board summary, which makes the
 tool convenient as a quick project status command.
+
+=seealso
+
+L<karr>, L<App::karr::Git>, L<App::karr::BoardStore>, L<App::karr::Task>,
+L<App::karr::Config>, L<App::karr::Cmd::Init>, L<App::karr::Cmd::Skill>
 
 =cut
 
