@@ -1,7 +1,7 @@
 # ABSTRACT: Kanban Assignment & Responsibility Registry
 
 package App::karr;
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 use Moo;
 use MooX::Cmd;
 use MooX::Options;

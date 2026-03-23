@@ -1,7 +1,7 @@
 # ABSTRACT: Git operations for karr sync (via CLI)
 
 package App::karr::Git;
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 use strict;
 use warnings;
 use Path::Tiny qw( path );

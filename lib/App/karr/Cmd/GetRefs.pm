@@ -1,7 +1,7 @@
 # ABSTRACT: Fetch helper payloads from a Git ref
 
 package App::karr::Cmd::GetRefs;
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 use Moo;
 use MooX::Cmd;
 use MooX::Options (

@@ -1,3 +1,5 @@
+{{$NEXT}}
+
 0.102     2026-03-23 21:55:25Z
 
     - Fix CPAN smoker failures: skip git tests on old git (< 1.8.5, no -C flag)
