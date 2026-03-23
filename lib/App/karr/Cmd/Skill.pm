@@ -1,7 +1,7 @@
 # ABSTRACT: Install, check, and update bundled agent skills
 
 package App::karr::Cmd::Skill;
-our $VERSION = '0.004';
+our $VERSION = '0.101';
 use Moo;
 use MooX::Cmd;
 use MooX::Options (
