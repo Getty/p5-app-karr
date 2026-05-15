@@ -1,5 +1,5 @@
 ---
-name: perl-share-files
+name: perl-file-sharedir
 description: "File::ShareDir — packaging and accessing non-code data files (templates, schemas, configs, skills) in Perl distributions."
 user-invocable: true
 ---

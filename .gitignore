@@ -23,6 +23,9 @@
 .claude/todos/
 .claude/projects/
 
+# AGENTS.md ignored - our-codex
+AGENTS.md
+
 App-karr-*
 *.bak
 *.old
