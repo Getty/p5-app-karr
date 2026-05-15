@@ -11,7 +11,6 @@ use App::karr::Role::BoardAccess;
 use App::karr::Role::Output;
 use App::karr::Task;
 use App::karr::Config;
-use Time::Piece;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
@@ -71,23 +70,20 @@ sub execute {
 
   my $ec = $self->store->effective_config;
   my @tasks = $self->load_tasks;
-  my @statuses = map {
-    ref $_ ? $_->{name} : $_
-  } @{$ec->{statuses} // []};
+  my @statuses = $self->store->all_status_names;
 
   # Determine terminal and first statuses
   my $first_status = $statuses[0];
-  my %terminal = map { $_ => 1 } ('done', 'archived');
 
   # Exclude archived from all operations
-  my @active_tasks = grep { $_->status ne 'archived' } @tasks;
+  my @active_tasks = grep { !$self->store->is_terminal_status($_->status) } @tasks;
 
   # Build summary
   my $board_name = $ec->{board}{name} // 'Kanban Board';
   my $total = scalar @active_tasks;
-  my $active = grep { $_->status ne $first_status && !$terminal{$_->status} } @active_tasks;
+  my $active = grep { $_->status ne $first_status && !$self->store->is_terminal_status($_->status) } @active_tasks;
   my $blocked = grep { $_->has_blocked } @active_tasks;
-  my $overdue = $self->_count_overdue(\@active_tasks, \%terminal);
+  my $overdue = $self->_count_overdue(\@active_tasks);
 
   # Build sections
   my %wanted_sections;
@@ -105,7 +101,7 @@ sub execute {
     if ($sec eq 'in-progress') {
       @items = map { $self->_task_item($_) }
         sort { $self->_pri_order($a) <=> $self->_pri_order($b) }
-        grep { $_->status ne $first_status && !$terminal{$_->status} && !$_->has_blocked }
+        grep { $_->status ne $first_status && !$self->store->is_terminal_status($_->status) && !$_->has_blocked }
         @active_tasks;
     } elsif ($sec eq 'blocked') {
       @items = map { $self->_task_item($_, 'blocked: ' . ($_->blocked // '')) }
@@ -114,14 +110,13 @@ sub execute {
     } elsif ($sec eq 'overdue') {
       my $now = gmtime->strftime('%Y-%m-%d');
       @items = map { $self->_task_item($_, 'due ' . $_->due) }
-        grep { $_->has_due && $_->due lt $now && !$terminal{$_->status} }
+        grep { $_->has_due && $_->due lt $now && !$self->store->is_terminal_status($_->status) }
         @active_tasks;
     } elsif ($sec eq 'recently-completed') {
       my $cutoff = (gmtime() - ($self->days * 86400))->strftime('%Y-%m-%d');
       @items = map { $self->_task_item($_, 'completed ' . ($_->completed // '')) }
         sort { ($b->completed // '') cmp ($a->completed // '') }
-        grep { $terminal{$_->status} && $_->status ne 'archived'
-               && $_->has_completed && $_->completed ge $cutoff }
+        grep { $self->store->is_terminal_status($_->status) && $_->status ne 'archived' && $_->has_completed && $_->completed ge $cutoff }
         @active_tasks;
     }
 
@@ -217,14 +212,14 @@ sub _task_item {
 
 sub _pri_order {
   my ($self, $task) = @_;
-  my %order = (critical => 0, high => 1, medium => 2, low => 3);
+  my %order = App::karr::Config->priority_order;
   return $order{$task->priority} // 2;
 }
 
 sub _count_overdue {
-  my ($self, $tasks, $terminal) = @_;
+  my ($self, $tasks) = @_;
   my $now = gmtime->strftime('%Y-%m-%d');
-  return scalar grep { $_->has_due && $_->due lt $now && !$terminal->{$_->status} } @$tasks;
+  return scalar grep { $_->has_due && $_->due lt $now && !$self->store->is_terminal_status($_->status) } @$tasks;
 }
 
 sub _load_tasks {

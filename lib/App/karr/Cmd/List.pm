@@ -10,8 +10,7 @@ use MooX::Options (
 use App::karr::Role::BoardAccess;
 use App::karr::Role::Output;
 use App::karr::Task;
-
-with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
+use App::karr::Config;
 
 =head1 SYNOPSIS
 
@@ -154,7 +153,7 @@ sub _filter {
   my @filtered = @$tasks;
 
   # Exclude archived by default
-  @filtered = grep { $_->status ne 'archived' } @filtered;
+  @filtered = grep { !App::karr::Config->is_terminal_status($_->status) } @filtered;
 
   if ($self->status) {
     my %statuses = map { $_ => 1 } split /,/, $self->status;
@@ -194,8 +193,8 @@ sub _sort {
   if ($field eq 'id') {
     @sorted = sort { $a->id <=> $b->id } @$tasks;
   } elsif ($field eq 'priority') {
-    my %pri = (low => 0, medium => 1, high => 2, critical => 3);
-    @sorted = sort { ($pri{$a->priority} // 0) <=> ($pri{$b->priority} // 0) } @$tasks;
+    my %pri = App::karr::Config->priority_order;
+    @sorted = sort { ($pri{$a->priority} // 2) <=> ($pri{$b->priority} // 2) } @$tasks;
   } else {
     @sorted = sort { ($a->$field // '') cmp ($b->$field // '') } @$tasks;
   }

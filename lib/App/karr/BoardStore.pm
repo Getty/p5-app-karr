@@ -58,6 +58,29 @@ sub effective_config {
     return $self->{_effective_config} //= $self->load_config;
 }
 
+sub all_status_names {
+    my ($self) = @_;
+    my $ec = $self->effective_config;
+    return map { ref $_ ? $_->{name} : $_ } @{$ec->{statuses} // []};
+}
+
+sub status_requires_claim {
+    my ($self, $status_name) = @_;
+    my $ec = $self->effective_config;
+    my ($sc) = grep {
+        (ref $_ ? $_->{name} : $_) eq $status_name
+    } @{$ec->{statuses} // []};
+    return 0 unless $sc;
+    return 0 if !ref $sc;
+    return $sc->{require_claim} ? 1 : 0;
+}
+
+sub is_terminal_status {
+    my ($self, $status_name) = @_;
+    return 1 if $status_name eq 'done' || $status_name eq 'archived';
+    return 0;
+}
+
 sub save_config {
     my ( $self, $effective ) = @_;
     my $defaults = App::karr::Config->default_config;

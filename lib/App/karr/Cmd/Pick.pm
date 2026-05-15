@@ -98,7 +98,8 @@ sub execute {
     @tasks = grep { $allowed{$_->status} } @tasks;
   } else {
     # Exclude terminal statuses
-    @tasks = grep { $_->status ne 'done' && $_->status ne 'archived' } @tasks;
+    # Exclude terminal statuses
+    @tasks = grep { !App::karr::Config->is_terminal_status($_->status) } @tasks;
   }
 
   # Exclude claimed tasks (unless claim expired)
@@ -120,8 +121,8 @@ sub execute {
   }
 
   # Sort by class priority, then by priority
-  my %class_order = (expedite => 0, 'fixed-date' => 1, standard => 2, intangible => 3);
-  my %pri_order   = (critical => 0, high => 1, medium => 2, low => 3);
+  my %class_order = App::karr::Config->class_order;
+  my %pri_order   = App::karr::Config->priority_order;
 
   @tasks = sort {
     ($class_order{$a->class} // 2) <=> ($class_order{$b->class} // 2)

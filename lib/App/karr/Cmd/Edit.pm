@@ -10,6 +10,7 @@ use MooX::Options (
 use App::karr::Role::BoardAccess;
 use App::karr::Role::Output;
 use App::karr::Task;
+use Time::Piece;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
@@ -172,8 +173,7 @@ sub execute {
 
     if ($self->claim) {
       $task->claimed_by($self->claim);
-      require Time::Piece;
-      $task->claimed_at(Time::Piece::gmtime()->datetime . 'Z');
+      $task->claimed_at(gmtime->datetime . 'Z');
     }
 
     if ($self->release) {

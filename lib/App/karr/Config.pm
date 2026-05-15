@@ -87,6 +87,37 @@ sub claim_timeout {
   return $self->data->{claim_timeout} // '1h';
 }
 
+sub priority_order {
+  my ($class) = @_;
+  return (critical => 0, high => 1, medium => 2, low => 3);
+}
+
+sub class_order {
+  my ($class) = @_;
+  return (expedite => 0, 'fixed-date' => 1, standard => 2, intangible => 3);
+}
+
+sub is_terminal_status {
+  my ($class, $status) = @_;
+  return 1 if $status eq 'done' || $status eq 'archived';
+  return 0;
+}
+
+sub terminal_statuses {
+  my ($class) = @_;
+  return ('done', 'archived');
+}
+
+sub status_requires_claim {
+  my ($self, $status_name) = @_;
+  my ($sc) = grep {
+    (ref $_ ? $_->{name} : $_) eq $status_name
+  } @{$self->data->{statuses} // []};
+  return 0 unless $sc;
+  return 1 if !ref $sc;
+  return $sc->{require_claim} ? 1 : 0;
+}
+
 sub effective_config {
   my ($class, $overrides, %args) = @_;
   my $defaults = $class->default_config(%args);

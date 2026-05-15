@@ -11,6 +11,7 @@ use App::karr::Role::BoardAccess;
 use App::karr::Role::Output;
 use App::karr::Task;
 use App::karr::Config;
+use Time::Piece;
 
 with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
 
@@ -74,9 +75,7 @@ sub execute {
   my $new_status = $args_ref->[1];
 
   my $ec = $self->store->effective_config;
-  my @statuses = map {
-    ref $_ ? $_->{name} : $_
-  } @{$ec->{statuses} // []};
+  my @statuses = $self->store->all_status_names;
 
   my @results;
   for my $id (@ids) {
@@ -98,17 +97,13 @@ sub execute {
     die "New status required\n" unless $task_new_status;
 
     # Check require_claim
-    my $status_config = $ec->{statuses} // [];
-    my ($sc) = grep { (ref $_ ? $_->{name} : $_) eq $task_new_status } @$status_config;
-    $sc = $sc->{require_claim} if ref $sc;
-    if ($sc && !$self->claim && !$task->has_claimed_by) {
+    if ($self->store->status_requires_claim($task_new_status) && !$self->claim && !$task->has_claimed_by) {
       die "Status '$task_new_status' requires --claim\n";
     }
 
     if ($self->claim) {
       $task->claimed_by($self->claim);
-      require Time::Piece;
-      $task->claimed_at(Time::Piece::gmtime()->datetime . 'Z');
+      $task->claimed_at(gmtime->datetime . 'Z');
     }
 
     my $old_status = $task->status;
@@ -116,12 +111,10 @@ sub execute {
 
     # Set started/completed timestamps
     if ($task_new_status eq 'in-progress' && !$task->has_started) {
-      require Time::Piece;
-      $task->started(Time::Piece::gmtime()->strftime('%Y-%m-%d'));
+      $task->started(gmtime->strftime('%Y-%m-%d'));
     }
     if ($task_new_status eq 'done' && !$task->has_completed) {
-      require Time::Piece;
-      $task->completed(Time::Piece::gmtime()->strftime('%Y-%m-%d'));
+      $task->completed(gmtime->strftime('%Y-%m-%d'));
     }
 
     $self->save_task($task);

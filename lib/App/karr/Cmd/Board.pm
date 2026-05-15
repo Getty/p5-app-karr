@@ -75,9 +75,7 @@ sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
   my $ec = $self->store->effective_config;
-  my @statuses = map {
-    ref $_ ? $_->{name} : $_
-  } @{$ec->{statuses} // []};
+  my @statuses = $self->store->all_status_names;
   my @tasks = $self->load_tasks;
 
   my %by_status;

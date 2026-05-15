@@ -51,16 +51,9 @@ sub parse_ids {
 sub append_log {
     my ($self, $git, %entry) = @_;
     $git //= $self->git;
-    require JSON::MaybeXS;
-    require POSIX;
-    $entry{ts} //= POSIX::strftime('%Y-%m-%dT%H:%M:%SZ', gmtime());
-    my $identity = $git->git_user_email || 'unknown';
-    $identity =~ s/[^a-zA-Z0-9._-]/_/g;
-    my $ref = "refs/karr/log/$identity";
-    my $existing = $git->read_ref($ref);
-    my $line = JSON::MaybeXS::encode_json(\%entry);
-    my $new = $existing ? "$existing\n$line" : $line;
-    $git->write_ref($ref, $new);
+    require App::karr::ActivityLog;
+    my $logger = App::karr::ActivityLog->new(git => $git);
+    return $logger->log_entry(%entry);
 }
 
 sub save_config {
