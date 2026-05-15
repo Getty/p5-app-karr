@@ -6,10 +6,54 @@ use Moo;
 use JSON::MaybeXS qw( encode_json );
 use POSIX qw( strftime );
 
+=head1 SYNOPSIS
+
+    use App::karr::ActivityLog;
+    use App::karr::Git;
+
+    my $git = App::karr::Git->new(dir => '.');
+    my $log = App::karr::ActivityLog->new(git => $git);
+
+    $log->log_entry(
+        agent   => 'agent-fox',
+        action  => 'pick',
+        task_id => 5,
+        detail  => 'in-progress',
+    );
+
+=head1 DESCRIPTION
+
+Writes append-style JSON log entries to C<refs/karr/log/E<lt>identityE<gt>>
+refs. Each entry receives an automatic timestamp if not provided.
+
+The identity is derived from the Git user email, sanitized for use in ref
+names.
+
+=head1 METHODS
+
+=cut
+
 has git => (
     is       => 'ro',
     required => 1,
 );
+
+=head2 log_entry
+
+    $log->log_entry(
+        agent   => 'agent-fox',
+        action  => 'pick',
+        task_id => 5,
+        detail  => 'in-progress',
+        ts      => '2026-05-15T10:00:00Z',  # optional, auto-generated
+    );
+
+Writes a JSON log line to the per-identity ref. The ref path is
+C<refs/karr/log/E<lt>sanitized_emailE<gt>>.
+
+Returns the result of L<Git/write_ref>.
+
+=cut
 
 sub log_entry {
     my ($self, %entry) = @_;

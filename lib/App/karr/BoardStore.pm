@@ -64,6 +64,14 @@ sub all_status_names {
     return map { ref $_ ? $_->{name} : $_ } @{$ec->{statuses} // []};
 }
 
+=head2 all_status_names
+
+Returns a list of all status names from the effective config.
+
+    my @statuses = $store->all_status_names;
+
+=cut
+
 sub status_requires_claim {
     my ($self, $status_name) = @_;
     my $ec = $self->effective_config;
@@ -75,11 +83,31 @@ sub status_requires_claim {
     return $sc->{require_claim} ? 1 : 0;
 }
 
+=head2 status_requires_claim
+
+Returns true if the given status requires a claim.
+
+    if ($store->status_requires_claim('in-progress')) {
+        # must use --claim to move here
+    }
+
+=cut
+
 sub is_terminal_status {
     my ($self, $status_name) = @_;
     return 1 if $status_name eq 'done' || $status_name eq 'archived';
     return 0;
 }
+
+=head2 is_terminal_status
+
+Returns true if the status is terminal (done or archived).
+
+    unless ($store->is_terminal_status($task->status)) {
+        # task is still active
+    }
+
+=cut
 
 sub save_config {
     my ( $self, $effective ) = @_;

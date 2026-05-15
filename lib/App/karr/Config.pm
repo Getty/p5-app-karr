@@ -92,10 +92,28 @@ sub priority_order {
   return (critical => 0, high => 1, medium => 2, low => 3);
 }
 
+=head2 priority_order
+
+Returns a hash for sorting tasks by priority.
+
+    my %order = App::karr::Config->priority_order;
+    # (critical => 0, high => 1, medium => 2, low => 3)
+
+=cut
+
 sub class_order {
   my ($class) = @_;
   return (expedite => 0, 'fixed-date' => 1, standard => 2, intangible => 3);
 }
+
+=head2 class_order
+
+Returns a hash for sorting tasks by class of service.
+
+    my %order = App::karr::Config->class_order;
+    # (expedite => 0, 'fixed-date' => 1, standard => 2, intangible => 3)
+
+=cut
 
 sub is_terminal_status {
   my ($class, $status) = @_;
@@ -103,10 +121,28 @@ sub is_terminal_status {
   return 0;
 }
 
+=head2 is_terminal_status
+
+Returns true if the given status is terminal (done or archived).
+
+    if (App::karr::Config->is_terminal_status($task->status)) {
+        # task is in a terminal state
+    }
+
+=cut
+
 sub terminal_statuses {
   my ($class) = @_;
   return ('done', 'archived');
 }
+
+=head2 terminal_statuses
+
+Returns a list of terminal status names.
+
+    my @terminal = App::karr::Config->terminal_statuses;
+
+=cut
 
 sub status_requires_claim {
   my ($self, $status_name) = @_;
