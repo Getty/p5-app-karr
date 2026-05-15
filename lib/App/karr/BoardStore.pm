@@ -53,11 +53,17 @@ sub load_config {
     return _merge_hashes( $defaults, $overrides );
 }
 
+sub effective_config {
+    my ($self) = @_;
+    return $self->{_effective_config} //= $self->load_config;
+}
+
 sub save_config {
     my ( $self, $effective ) = @_;
     my $defaults = App::karr::Config->default_config;
     my $overrides = _diff_hashes( $defaults, $effective );
     $overrides->{version} = $effective->{version} // 1;
+    delete $self->{_effective_config};  # invalidate cache
     return $self->git->write_config_ref($overrides);
 }
 

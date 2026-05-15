@@ -73,10 +73,10 @@ sub execute {
   my @ids = $self->parse_ids($id_str);
   my $new_status = $args_ref->[1];
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
-  my @statuses = $config->statuses;
+  my $ec = $self->store->effective_config;
+  my @statuses = map {
+    ref $_ ? $_->{name} : $_
+  } @{$ec->{statuses} // []};
 
   my @results;
   for my $id (@ids) {
@@ -98,8 +98,10 @@ sub execute {
     die "New status required\n" unless $task_new_status;
 
     # Check require_claim
-    my $sc = $config->status_config($task_new_status);
-    if ($sc && $sc->{require_claim} && !$self->claim && !$task->has_claimed_by) {
+    my $status_config = $ec->{statuses} // [];
+    my ($sc) = grep { (ref $_ ? $_->{name} : $_) eq $task_new_status } @$status_config;
+    $sc = $sc->{require_claim} if ref $sc;
+    if ($sc && !$self->claim && !$task->has_claimed_by) {
       die "Status '$task_new_status' requires --claim\n";
     }
 
@@ -122,7 +124,7 @@ sub execute {
       $task->completed(Time::Piece::gmtime()->strftime('%Y-%m-%d'));
     }
 
-    $task->save;
+    $self->save_task($task);
 
     push @results, { id => $task->id, title => $task->title, old_status => $old_status, new_status => $task_new_status };
     printf "Moved task %d: %s -> %s\n", $task->id, $old_status, $task_new_status unless $self->json;

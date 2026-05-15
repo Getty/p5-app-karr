@@ -116,10 +116,8 @@ sub execute {
   my $title = $self->title // $args_ref->[0]
     or die "Title is required. Use --title or pass as argument.\n";
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
-  my $defaults = $config->data->{defaults} // {};
+  my $ec = $self->store->effective_config;
+  my $defaults = $ec->{defaults} // {};
 
   my %task_args = (
     id       => $self->allocate_next_id,
@@ -136,11 +134,11 @@ sub execute {
   $task_args{body}     = $self->body if $self->body;
 
   my $task = App::karr::Task->new(%task_args);
-  my $file = $task->save($self->tasks_dir);
+  $self->save_task($task);
 
   $self->sync_after;
 
-  printf "Created task %d: %s (%s)\n", $task->id, $task->title, $file->basename;
+  printf "Created task %d: %s\n", $task->id, $task->title;
 }
 
 1;

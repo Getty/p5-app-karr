@@ -193,6 +193,7 @@ sub fetch {
 sub push {
     my ( $self, $remote, $refspec ) = @_;
     $remote //= 'origin';
+    return 1 unless $self->has_remote($remote);
     $refspec //= '+refs/karr/*:refs/karr/*';
     my (undef, $ok) = $self->_git_cmd('push', '--prune', $remote, $refspec);
     return $ok;

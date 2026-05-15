@@ -88,9 +88,7 @@ sub execute {
 
   $self->sync_before;
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
+  my $ec = $self->store->effective_config;
 
   my @tasks = $self->load_tasks;
 
@@ -104,7 +102,7 @@ sub execute {
   }
 
   # Exclude claimed tasks (unless claim expired)
-  my $timeout = $self->_parse_timeout($config->claim_timeout);
+  my $timeout = $self->_parse_timeout($ec->{claim_timeout} // '1h');
   @tasks = grep {
     !$_->has_claimed_by || $self->_claim_expired($_, $timeout)
   } @tasks;
@@ -137,15 +135,13 @@ sub execute {
   }
 
   # Try to lock + claim
-  require App::karr::Git;
-  my $git = App::karr::Git->new(dir => $self->board_dir->parent->stringify);
-  my $use_lock = $git->is_repo;
+  my $use_lock = $self->git->is_repo;
   my $lock;
   if ($use_lock) {
     require App::karr::Lock;
-    $lock = App::karr::Lock->new(git => $git);
+    $lock = App::karr::Lock->new(git => $self->git);
   }
-  my $email = $use_lock ? ($git->git_user_email || $self->claim) : $self->claim;
+  my $email = $use_lock ? ($self->git->git_user_email || $self->claim) : $self->claim;
 
   my $picked;
   for my $task (@tasks) {
@@ -164,7 +160,7 @@ sub execute {
       }
     }
 
-    $task->save;
+    $self->save_task($task);
     $picked = $task;
     last;
   }
@@ -179,7 +175,7 @@ sub execute {
 
   # Log the pick action
   if ($use_lock) {
-    $self->append_log($git,
+    $self->append_log($self->git,
       agent   => $self->claim,
       action  => 'pick',
       task_id => $picked->id,

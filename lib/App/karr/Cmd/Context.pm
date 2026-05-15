@@ -69,12 +69,11 @@ option days => (
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
-
-  my @tasks = $self->_load_tasks;
-  my @statuses = $config->statuses;
+  my $ec = $self->store->effective_config;
+  my @tasks = $self->load_tasks;
+  my @statuses = map {
+    ref $_ ? $_->{name} : $_
+  } @{$ec->{statuses} // []};
 
   # Determine terminal and first statuses
   my $first_status = $statuses[0];
@@ -84,7 +83,7 @@ sub execute {
   my @active_tasks = grep { $_->status ne 'archived' } @tasks;
 
   # Build summary
-  my $board_name = $config->data->{board}{name} // 'Kanban Board';
+  my $board_name = $ec->{board}{name} // 'Kanban Board';
   my $total = scalar @active_tasks;
   my $active = grep { $_->status ne $first_status && !$terminal{$_->status} } @active_tasks;
   my $blocked = grep { $_->has_blocked } @active_tasks;
@@ -230,10 +229,7 @@ sub _count_overdue {
 
 sub _load_tasks {
   my ($self) = @_;
-  my $dir = $self->tasks_dir;
-  return () unless $dir->exists;
-  my @files = sort $dir->children(qr/\.md$/);
-  return map { App::karr::Task->from_file($_) } @files;
+  return $self->load_tasks;
 }
 
 1;

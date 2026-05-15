@@ -1,6 +1,11 @@
 {{$NEXT}}
 
-0.102     2026-03-23 21:55:25Z
+    - Architecture refactor: split Role::BoardAccess into Role::BoardDiscovery +
+      Role::SyncLifecycle. Commands now work directly on refs via BoardStore
+      instead of via a materialized temp directory.
+    - Add SyncGuard (push insurance on die/croak), effective_config() on BoardStore,
+      and $self->config via Role::BoardDiscovery.
+    - Add tasks/ to .gitignore (never commit materialized view).     2026-03-23 21:55:25Z
 
     - Fix CPAN smoker failures: skip git tests on old git (< 1.8.5, no -C flag)
     - Fix skip() without SKIP block in t/11-git-impl.t (Test::More crash)

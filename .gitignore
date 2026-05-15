@@ -26,6 +26,9 @@
 # AGENTS.md ignored - our-codex
 AGENTS.md
 
+# karr materialized task view — never commit
+tasks/
+
 App-karr-*
 *.bak
 *.old

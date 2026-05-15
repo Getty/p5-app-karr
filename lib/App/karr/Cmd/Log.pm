@@ -72,8 +72,7 @@ option last => (
 sub execute {
     my ($self, $args_ref, $chain_ref) = @_;
 
-    require App::karr::Git;
-    my $git = App::karr::Git->new(dir => $self->board_dir->parent->stringify);
+    my $git = $self->git;
 
     unless ($git->is_repo) {
         print "Not a git repository. No log available.\n";

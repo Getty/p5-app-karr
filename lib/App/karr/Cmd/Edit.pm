@@ -189,15 +189,7 @@ sub execute {
       $task->blocked(undef);
     }
 
-    # Handle title change -> file rename
-    if ($self->title && $task->has_file_path) {
-      my $old_file = $task->file_path;
-      my $new_file = $self->tasks_dir->child($task->filename);
-      $task->save($self->tasks_dir);
-      $old_file->remove if "$old_file" ne "$new_file";
-    } else {
-      $task->save;
-    }
+    $self->save_task($task);
 
     push @results, { id => $task->id, title => $task->title };
     printf "Updated task %d: %s\n", $task->id, $task->title unless $self->json;

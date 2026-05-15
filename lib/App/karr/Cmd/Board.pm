@@ -74,11 +74,10 @@ my %PRIORITY_COLOR = (
 sub execute {
   my ($self, $args_ref, $chain_ref) = @_;
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
-
-  my @statuses = $config->statuses;
+  my $ec = $self->store->effective_config;
+  my @statuses = map {
+    ref $_ ? $_->{name} : $_
+  } @{$ec->{statuses} // []};
   my @tasks = $self->load_tasks;
 
   my %by_status;
@@ -87,7 +86,7 @@ sub execute {
   }
 
   if ($self->json) {
-    my $board_name = $config->data->{board}{name} // 'Kanban Board';
+    my $board_name = $ec->{board}{name} // 'Kanban Board';
     my %board_data = (
       name     => $board_name,
       total    => scalar @tasks,
@@ -116,7 +115,7 @@ sub execute {
     return;
   }
 
-  my $board_name = $config->data->{board}{name} // 'Kanban Board';
+  my $board_name = $ec->{board}{name} // 'Kanban Board';
   my $title = colored(" $board_name ", 'bold white on_black');
   print "\n $title\n\n";
 

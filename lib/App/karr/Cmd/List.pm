@@ -146,10 +146,7 @@ sub execute {
 
 sub _load_tasks {
   my ($self) = @_;
-  my $dir = $self->tasks_dir;
-  return () unless $dir->exists;
-  my @files = sort $dir->children(qr/\.md$/);
-  return map { App::karr::Task->from_file($_) } @files;
+  return $self->load_tasks;
 }
 
 sub _filter {

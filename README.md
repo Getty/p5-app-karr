@@ -109,21 +109,20 @@ docker build --target runtime-user \
 
 ## How it works
 
-The write path is intentionally simple:
+The write path:
 
 ```text
-fetch refs -> materialize temp board -> change task/config -> serialize to refs -> push
+pull refs -> change task/config -> push refs
 ```
+
+Commands work directly against refs via C<BoardStore>. A materialized F<tasks/> view is generated on demand (see C<karr materialize>) and is never committed — it is always in F<.gitignore>.
 
 Important refs:
 
-- `refs/karr/config` holds sparse YAML config overrides
-- `refs/karr/meta/next-id` holds the next numeric task id
-- `refs/karr/tasks/<id>/data` holds task Markdown plus frontmatter
-- `refs/karr/log/<agent>` holds append-style JSON log lines
-
-This means the repository stays Git-only and the board remains ref-first even
-when commands internally use temporary files for convenience.
+- C<refs/karr/config> holds sparse YAML config overrides
+- C<refs/karr/meta/next-id> holds the next numeric task id
+- C<refs/karr/tasks/E<lt>idE<gt>/data> holds task Markdown plus frontmatter
+- C<refs/karr/log/E<lt>agentE<gt>> holds append-style JSON log lines
 
 ## Command map
 
@@ -297,10 +296,10 @@ That makes the format easy to inspect, script, and reuse from Perl code.
 use App::karr::Git;
 use App::karr::BoardStore;
 
-my $git = App::karr::Git->new(dir => '.');
+my $git   = App::karr::Git->new(dir => '.');
 my $store = App::karr::BoardStore->new(git => $git);
 
-my $config = $store->load_config;
+my $config = $store->effective_config;
 my @tasks  = $store->load_tasks;
 ```
 

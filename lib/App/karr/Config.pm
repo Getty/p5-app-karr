@@ -35,7 +35,14 @@ has data => ( is => 'lazy' );
 
 sub _build_data {
   my ($self) = @_;
-  return LoadFile($self->file->stringify);
+  my $file = $self->file;
+  return LoadFile($file->stringify) if defined $file && -f $file;
+  die "No file or data provided to Config\n";
+}
+
+sub from_merged {
+  my ($class, $merged) = @_;
+  return bless { data => $merged, file => undef }, $class;
 }
 
 sub save {
