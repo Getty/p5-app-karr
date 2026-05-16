@@ -1,4 +1,4 @@
-{{$NEXT}}
+0.200     2026-05-16 17:45:23Z
 
     - Centralize config knowledge: priority_order(), class_order(),
       terminal_statuses(), is_terminal_status(), status_requires_claim()
