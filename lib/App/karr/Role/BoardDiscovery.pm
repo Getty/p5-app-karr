@@ -1,7 +1,7 @@
 # ABSTRACT: Role providing minimal board discovery and config access
 
 package App::karr::Role::BoardDiscovery;
-our $VERSION = '0.103';
+our $VERSION = '0.201';
 use Moo::Role;
 use Path::Tiny;
 use Carp qw( croak );
