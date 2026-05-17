@@ -1,3 +1,7 @@
+{{$NEXT}}
+
+    - Docker Release Test
+
 0.202     2026-05-17 05:17:07Z
 
     - Fix `karr list` crashing with "Can't locate object method 'load_tasks'":
