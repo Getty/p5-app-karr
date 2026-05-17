@@ -12,6 +12,8 @@ use App::karr::Role::Output;
 use App::karr::Task;
 use App::karr::Config;
 
+with 'App::karr::Role::BoardAccess', 'App::karr::Role::Output';
+
 =head1 SYNOPSIS
 
     karr list

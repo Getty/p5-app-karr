@@ -1,5 +1,12 @@
 {{$NEXT}}
 
+    - Fix `karr list` crashing with "Can't locate object method 'load_tasks'":
+      Cmd::List was missing `with 'App::karr::Role::BoardAccess'` (the role was
+      `use`d but never consumed). Surfaced while writing worktree tests.
+    - Add t/29-worktree.t covering init/create/list inside `git worktree`
+      directories and verifying refs/karr/* are correctly shared between the
+      main work-tree and additional worktrees.
+
 0.200     2026-05-16 17:45:23Z
 
     - Centralize config knowledge: priority_order(), class_order(),
