@@ -1,7 +1,7 @@
 # ABSTRACT: Task object representing a single kanban card
 
 package App::karr::Task;
-our $VERSION = '0.201';
+our $VERSION = '0.206';
 use Moo;
 use YAML::XS qw( Load Dump );
 use Path::Tiny;

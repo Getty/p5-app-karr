@@ -1,7 +1,7 @@
 # ABSTRACT: Archive a task (soft-delete)
 
 package App::karr::Cmd::Archive;
-our $VERSION = '0.201';
+our $VERSION = '0.206';
 use Moo;
 use MooX::Cmd;
 use MooX::Options (
