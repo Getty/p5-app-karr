@@ -1,4 +1,4 @@
-{{$NEXT}}
+0.202     2026-05-17 05:17:07Z
 
     - Fix `karr list` crashing with "Can't locate object method 'load_tasks'":
       Cmd::List was missing `with 'App::karr::Role::BoardAccess'` (the role was
