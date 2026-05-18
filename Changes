@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+    - Drop hard-coded `tags = latest` / `tags = user` in the Docker
+      subsections so the new `[@Author::GETTY::Docker]` default
+      (`latest %V %v`) applies. `runtime-user` keeps a `-user`
+      suffix on each tag.
+
 0.205     2026-05-17 23:00:03Z
 
     - Docker Release Test
