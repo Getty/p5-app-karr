@@ -5,10 +5,6 @@
       (`latest %V %v`) applies. `runtime-user` keeps a `-user`
       suffix on each tag.
 
-0.205     2026-05-17 23:00:03Z
-
-    - Docker Release Test
-
 0.202     2026-05-17 05:17:07Z
 
     - Fix `karr list` crashing with "Can't locate object method 'load_tasks'":
