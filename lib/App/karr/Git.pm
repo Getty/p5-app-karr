@@ -1,4 +1,4 @@
-# ABSTRACT: Git operations for karr sync (native via Git::Native; fetch/push still CLI in Phase 3)
+# ABSTRACT: Git operations for karr sync (all-native via Git::Native + libgit2)
 
 package App::karr::Git;
 our $VERSION = '0.206';
@@ -9,6 +9,7 @@ use Try::Tiny;
 use YAML::XS qw( Dump Load );
 use Git::Native;
 use Git::Native::Signature;
+use Git::Native::Credential;
 
 =head1 SYNOPSIS
 
@@ -21,10 +22,10 @@ use Git::Native::Signature;
 =head1 DESCRIPTION
 
 L<App::karr::Git> provides the low-level Git interface used by C<karr> for
-syncing board state through C<refs/karr/*>. Local object/ref operations run
-natively via L<Git::Native> (FFI to libgit2 — no fork/exec per op).
-Network operations (C<fetch>/C<push>/C<pull>) still call the C<git> binary
-until L<Git::Native> grows credential callbacks.
+syncing board state through C<refs/karr/*>. Everything — local object/ref
+ops and network fetch/push — runs natively via L<Git::Native> (FFI to
+libgit2). No fork/exec per op. SSH-agent and HTTPS-token credentials are
+supplied through the libgit2 credential-acquire callback.
 
 =head1 SEE ALSO
 
@@ -68,27 +69,6 @@ sub _signature {
                       );
                     };
     return $self->{_sig};
-}
-
-# ----- Legacy CLI shim (still needed for fetch/push/pull/check-ref-format) -----
-
-sub _git_cmd {
-    my ($self, @cmd) = @_;
-    my $dir = $self->dir->stringify;
-    my $pid = open(my $fh, '-|');
-    if (!defined $pid) {
-        die "fork failed: $!";
-    }
-    if (!$pid) {
-        open(STDERR, '>', '/dev/null');
-        chdir $dir or die "chdir $dir: $!";
-        exec('git', @cmd) or die "exec git: $!";
-    }
-    my $output = do { local $/; <$fh> };
-    close $fh;
-    my $ok = $? == 0;
-    chomp $output if defined $output;
-    return wantarray ? ($output, $ok) : $output;
 }
 
 # ----- Repo discovery -----
@@ -246,53 +226,125 @@ sub delete_ref {
     return 1;
 }
 
-# ----- Remote / network ops: still CLI until Phase 4 -----
+# ----- Remote / network ops: native via Git::Native::Remote -----
 
 sub has_remote {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
-    my ( undef, $ok ) = $self->_git_cmd( 'remote', 'get-url', $remote );
-    return $ok ? 1 : 0;
+    my $repo = $self->_repo or return 0;
+    return $repo->has_remote($remote);
+}
+
+# Default credentials callback: SSH-agent → ~/.ssh/id_ed25519 → ~/.ssh/id_rsa
+# → default → fail. Matches CLI `git`'s implicit auth chain.
+sub _default_credentials_cb {
+    my @tried;
+    return sub {
+        my (%args) = @_;
+        my $user  = $args{username_from_url} || 'git';
+        my $types = $args{allowed_types}    || 0;
+
+        # GIT_CREDENTIAL_SSH_KEY = 1<<1 = 2
+        if ( $types & 2 ) {
+            return Git::Native::Credential->ssh_agent( username => $user )
+                unless $tried[0]++;
+            for my $k (qw( id_ed25519 id_rsa )) {
+                my $priv = "$ENV{HOME}/.ssh/$k";
+                next unless -r $priv;
+                next if $tried[1]{$k}++;
+                return Git::Native::Credential->ssh_key(
+                    username    => $user,
+                    private_key => $priv,
+                    public_key  => "$priv.pub",
+                    passphrase  => '',
+                );
+            }
+        }
+        # GIT_CREDENTIAL_DEFAULT = 1<<3 = 8
+        if ( ( $types & 8 ) && !$tried[2]++ ) {
+            return Git::Native::Credential->default;
+        }
+        return undef;   # PASSTHROUGH — give up
+    };
 }
 
 sub fetch {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
-    my (undef, $ok) = $self->_git_cmd('fetch', $remote);
-    return $ok;
+    my $repo = $self->_repo or return 0;
+    return 1 unless $repo->has_remote($remote);
+    return try {
+        my $r = $repo->remote($remote);
+        $r->fetch(
+            refspecs    => [],   # use configured refspecs
+            credentials => _default_credentials_cb(),
+        );
+        1;
+    } catch { 0 };
 }
 
 sub push {
     my ( $self, $remote, $refspec ) = @_;
     $remote //= 'origin';
-    return 1 unless $self->has_remote($remote);
+    my $repo = $self->_repo or return 0;
+    return 1 unless $repo->has_remote($remote);
     $refspec //= '+refs/karr/*:refs/karr/*';
-    my (undef, $ok) = $self->_git_cmd('push', '--prune', $remote, $refspec);
-    return $ok;
+    return try {
+        my $r = $repo->remote($remote);
+        $r->push(
+            refspecs    => [$refspec],
+            credentials => _default_credentials_cb(),
+            prune       => 1,
+        );
+        1;
+    } catch { 0 };
 }
 
 sub pull {
     my ( $self, $remote ) = @_;
     $remote //= 'origin';
-    return 1 unless $self->has_remote($remote);
-    my (undef, $ok) = $self->_git_cmd('fetch', $remote, 'refs/karr/*:refs/karr/*');
-    return $ok;
+    my $repo = $self->_repo or return 0;
+    return 1 unless $repo->has_remote($remote);
+    return try {
+        my $r = $repo->remote($remote);
+        $r->fetch(
+            refspecs    => ['refs/karr/*:refs/karr/*'],
+            credentials => _default_credentials_cb(),
+        );
+        1;
+    } catch { 0 };
 }
 
 sub push_ref {
     my ( $self, $ref, $remote ) = @_;
     $remote //= 'origin';
     $ref = $self->validate_helper_ref($ref);
-    my ( undef, $ok ) = $self->_git_cmd( 'push', $remote, "+$ref:$ref" );
-    return $ok;
+    my $repo = $self->_repo or return 0;
+    return 1 unless $repo->has_remote($remote);
+    return try {
+        my $r = $repo->remote($remote);
+        $r->push(
+            refspecs    => ["+$ref:$ref"],
+            credentials => _default_credentials_cb(),
+        );
+        1;
+    } catch { 0 };
 }
 
 sub pull_ref {
     my ( $self, $ref, $remote ) = @_;
     $remote //= 'origin';
     $ref = $self->validate_helper_ref($ref);
-    my ( undef, $ok ) = $self->_git_cmd( 'fetch', $remote, "$ref:$ref" );
-    return $ok;
+    my $repo = $self->_repo or return 0;
+    return 1 unless $repo->has_remote($remote);
+    return try {
+        my $r = $repo->remote($remote);
+        $r->fetch(
+            refspecs    => ["$ref:$ref"],
+            credentials => _default_credentials_cb(),
+        );
+        1;
+    } catch { 0 };
 }
 
 # ----- Task / config refs (sit on top of write_ref/read_ref) -----
