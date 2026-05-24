@@ -1,0 +1,32 @@
+---
+claimed_at: 2026-05-24T03:40:26Z
+claimed_by: claude
+class: standard
+completed: 2026-05-24
+created: 2026-05-24T01:45:20Z
+id: 1
+priority: high
+status: done
+tags:
+- bug
+- context-cmd
+title: 'Bug: karr context --json crashes with strftime error'
+updated: 2026-05-24T01:45:20Z
+---
+
+`karr context --json` (and probably plain `karr context`) crashes:
+
+```
+Can't locate object method "strftime" via package "Sun May 24 01:41:12 2026" (perhaps you forgot to load "Sun May 24 01:41:12 2026"?) at /storage/raid/home/getty/perl5/lib/perl5/App/karr/Cmd/Context.pm line 190.
+```
+
+Looks like a scalar/object mixup — a localtime() string is being method-called as if it were a DateTime object. Likely:
+
+```perl
+my $dt = localtime();  # scalar context — returns string!
+$dt->strftime(...);    # boom
+```
+
+Should be `my $dt = DateTime->now;` or `localtime()` in list context wrapped.
+
+Reproduce: `karr init --name test && karr context --json` in any git repo.
