@@ -14,6 +14,12 @@
       subsections so the new `[@Author::GETTY::Docker]` default
       (`latest %V %v`) applies. `runtime-user` keeps a `-user`
       suffix on each tag.
+    - Add `karr-foundation` binary and `App::karr::Foundation` module:
+      single-shot daemon for periodic agent execution across multiple karr
+      boards. Reads `~/.config/karr-foundation/config.yml` (dirs: / scan:),
+      checks each repo for board changes or open tasks, and invokes the
+      per-repo `.karr` command. Supports `--force`, `--dry-run`, `--verbose`.
+      Per-repo state in `.karr.state` / `.karr.lock` / `.karr.log` (gitignored).
 
 0.202     2026-05-17 05:17:07Z
 

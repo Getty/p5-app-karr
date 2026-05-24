@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+# PODNAME: karr-foundation
+# ABSTRACT: Single-shot foundation daemon for periodic karr agent execution
+use strict;
+use warnings;
+use App::karr::Foundation;
+exit App::karr::Foundation->new_with_options->run;
+
+=synopsis
+
+    # Every 5 minutes via cron
+    */5 * * * * karr-foundation
+
+    # One-shot run forcing execution in all repos
+    karr-foundation --force
+
+    # Preview without executing
+    karr-foundation --dry-run --verbose
+
+=description
+
+F<karr-foundation> reads a config file listing karr board directories, detects
+board changes or open tasks, and invokes a configured agent command for each
+active repo. It is designed to be called repeatedly — by cron, a systemd timer,
+or a tight while-loop.
+
+See L<App::karr::Foundation> for full documentation.
+
+=cut
