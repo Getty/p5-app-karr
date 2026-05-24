@@ -1,5 +1,15 @@
 {{$NEXT}}
 
+    - Fix `karr context` / `karr context --json` crashing with
+      "Can't locate object method 'strftime' via package 'Sun May ...'":
+      Cmd::Context now `use Time::Piece`, so `gmtime` returns a
+      Time::Piece object instead of a plain string. Added t/07-context.t
+      covering the plain, --json, and recently-completed cutoff paths.
+    - Fix `karr config show` (and get/set) crashing with
+      "Can't locate object method 'board_dir'": Cmd::Config now builds
+      its config via `$self->store->effective_config` and persists with
+      `$self->store->save_config`, instead of calling the non-existent
+      `board_dir` on itself. Added t/06-config-cmd.t.
     - Drop hard-coded `tags = latest` / `tags = user` in the Docker
       subsections so the new `[@Author::GETTY::Docker]` default
       (`latest %V %v`) applies. `runtime-user` keeps a `-user`

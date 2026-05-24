@@ -64,9 +64,7 @@ sub execute {
 
   $self->sync_before if $action eq 'set';
 
-  my $config = App::karr::Config->new(
-    file => $self->board_dir->child('config.yml'),
-  );
+  my $config = App::karr::Config->from_merged($self->store->effective_config);
 
   if ($action eq 'show') {
     $self->_show_all($config);
@@ -161,7 +159,7 @@ sub _set_key {
     $d->{$key} = $val;
   }
 
-  $config->save;
+  $self->store->save_config($d);
 
   if ($self->json) {
     $self->print_json({ key => $key, value => $val });

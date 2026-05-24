@@ -7,6 +7,7 @@ use MooX::Cmd;
 use MooX::Options (
   usage_string => 'USAGE: karr context [--write-to FILE] [--sections LIST] [--days N] [--json]',
 );
+use Time::Piece;
 use App::karr::Role::BoardAccess;
 use App::karr::Role::Output;
 use App::karr::Task;
