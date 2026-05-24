@@ -1,0 +1,25 @@
+---
+claimed_at: 2026-05-24T03:40:31Z
+claimed_by: claude
+class: standard
+completed: 2026-05-24
+created: 2026-05-24T01:45:25Z
+id: 2
+priority: high
+status: done
+tags:
+- bug
+- config-cmd
+title: 'Bug: karr config show crashes with board_dir method missing'
+updated: 2026-05-24T01:45:25Z
+---
+
+`karr config show` crashes:
+
+```
+Can't locate object method "board_dir" via package "App::karr::Cmd::Config" at /storage/raid/home/getty/perl5/lib/perl5/App/karr/Cmd/Config.pm line 29.
+```
+
+`board_dir` is being called on the Cmd::Config package itself rather than on a BoardStore or Git instance. Probably a missing `$self->git->` or `$self->store->` prefix.
+
+Reproduce: `karr init --name test && karr config show` in any git repo.
