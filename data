@@ -1,0 +1,106 @@
+---
+claimed_at: 2026-05-24T16:10:57Z
+claimed_by: claude
+class: standard
+completed: 2026-05-24
+created: 2026-05-24T01:45:54Z
+id: 3
+priority: standard
+started: 2026-05-24
+status: done
+tags:
+- feature
+- foundation
+- distributed-agents
+title: "Feature: App::karr::Foundation â\x80\x94 single-shot daemon for periodic agent
+  execution"
+updated: 2026-05-24T01:45:54Z
+---
+
+## Goal
+
+Add a sibling distribution `App::karr::Foundation` (or `karr-foundation` bin in App::karr) that enables 24/7 distributed agent execution.
+
+## How it works
+
+`karr-foundation` is a **single-shot, idempotent CLI**. It is meant to be invoked periodically (cron, systemd-timer, while-loop, etc) — it is not a long-running daemon itself. Frequency of invocation is left to the user.
+
+On each invocation:
+
+1. Read config (e.g. `~/.karr-foundation/dirs`) — list of directories to scan.
+2. Find `.karr` files in those directories (each is a karr-managed repo).
+3. For each found `.karr`:
+   a. `cd` into the repo
+   b. `karr sync --pull` (fetch remote karr refs)
+   c. Compute hash of `refs/karr/*` and compare to stored `.karr.state`
+   d. If hash changed OR there are open todo/in-progress tickets OR `--force`:
+      - acquire `.karr.lock`
+      - exec the `command:` from `.karr`
+      - log to `.karr.log`
+      - update `.karr.state`
+      - release lock
+4. Exit.
+
+## `.karr` file format (gitignored)
+
+```yaml
+# .karr
+command: claude --dangerously-skip-permissions -p "Use karr-coordinator agent, pick next task"
+agent: dbio-worker         # optional — spawn this subagent
+on_idle: skip              # 'skip' | 'always-run'
+max_runtime: 1800          # seconds — hard kill
+```
+
+## Why single-shot
+
+- No long-running process to crash/restart
+- User controls cadence via cron/timer
+- Lock file prevents overlap when run takes longer than interval
+- Trivial to debug — same as running command manually
+- No Docker needed — env variables (API keys, claude state) come from invoker
+
+## Tracked state per repo
+
+- `.karr.state` — last ref-hash, last run timestamp, last exit code
+- `.karr.lock` — PID + start time
+- `.karr.log` — append-only run log
+
+All gitignored.
+
+## Trigger mechanisms (user choice)
+
+| Mechanism | Cadence | Notes |
+|-----------|---------|-------|
+| crontab `*/5 * * * * karr-foundation` | 5min | dead simple |
+| systemd timer | configurable | better logging |
+| while-loop `while true; do karr-foundation; sleep 30; done` | tight | sub-minute reactivity |
+| Git post-merge hook | event-driven | runs only after pulls |
+| Manual `karr-foundation --force` | on-demand | testing/reset |
+
+## Distribution structure
+
+Either:
+- New CPAN dist `App::karr::Foundation` depending on `App::karr`
+- OR new `bin/karr-foundation` in `App::karr` itself
+
+Likely the latter — less dist sprawl.
+
+## Open questions
+
+- Where does the dirs config live? `~/.karr-foundation/dirs`? Or `.karr.global` in home?
+- Should foundation auto-discover all karr-init'd repos under a tree, or only those with `.karr` files?
+- Should `command:` substitute env vars? (e.g. `$KARR_AGENT`, `$KARR_REPO`)
+
+## Use case driver
+
+DBIO family — 15+ separate distributions, each with its own karr board. Coordinated multi-agent work across them via karr ticket handoffs requires periodic agent wake-up per repo. karr-foundation is the wake-up mechanism.
+
+
+---
+
+**DECISION 2026-05-24:** NOT a separate distribution.
+
+Implementation: add 'karr-foundation' executable to App::karr (script/karr-foundation or bin/karr-foundation, whichever the dist already uses for the main 'karr' bin).
+
+Reasoning: only Perl users will install karr anyway, so a separate dist adds packaging overhead with no audience benefit. Keep it inside App::karr.
+2026-05-24 16:10 Implemented: bin/karr-foundation + App::karr::Foundation, 13 tests, Changes updated, gitignore updated. Commit b7438ef.
