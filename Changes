@@ -1,5 +1,14 @@
 {{$NEXT}}
 
+    - Docker: bundle libgit2 (Alien::Libgit2 share build) so the runtime
+      image is self-contained. Builder installs cmake/pkg-config/zlib/
+      libssh2 dev headers and sets ALIEN_INSTALL_TYPE=share; runtime-base
+      installs libssl3/libssh2-1/zlib1g (the shared libs the vendored
+      libgit2.so links against). Needed since Git::Native moved to
+      Git::Libgit2 (libgit2 FFI).
+    - Add .github/workflows/ci.yml (perl 5.36/5.38/5.40) using the
+      [@Author::GETTY] dzil-test composite action; installs libgit2-dev so
+      Alien::Libgit2 links the system libgit2 (>= 1.5) in CI.
     - Git.pm: read git config (user.name/email) and validate helper ref
       names through Git::Native (Config + reference_name_is_valid) instead
       of poking Git::Libgit2::FFI directly. New Git.pm `ref_oids` helper.
