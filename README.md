@@ -196,6 +196,68 @@ karr log --agent "$NAME"
 - `standard`
 - `intangible`
 
+## Automated execution: karr-foundation
+
+`karr-foundation` is a single-shot, idempotent companion binary that drives
+agents across one or more boards. Point cron (or a systemd timer, or a tight
+loop) at it and it scans configured repos, decides whether there is work, and
+**drains** each board — running the configured agent command repeatedly until
+no actionable task remains.
+
+```bash
+# every 5 minutes
+*/5 * * * * karr-foundation
+
+karr-foundation --force            # run regardless of board state
+karr-foundation --dry-run --verbose
+```
+
+It reads `~/.config/karr-foundation/config.yml` (or `--config`):
+
+```yaml
+dirs:
+  - /path/to/repo1          # explicit board repos
+scan:
+  - /path/to/parent-dir     # auto-discover direct subdirs that have a .karr
+```
+
+Each repo carries a `.karr` file describing how to run its agent:
+
+```yaml
+command: claude -p "Use karr-coordinator agent, pick next task"
+on_idle: skip               # 'skip' (default) | 'always-run'
+max_runtime: 1800           # per-command SIGKILL + total drain budget (seconds)
+drain: true                 # loop until drained (default) | false: single run
+max_attempts: 2             # stalls on one task before auto-block
+max_iterations: 50          # hard cap on drain iterations
+cooldown_base: 1            # cooldown minutes at level 0
+cooldown_max: 64            # cooldown ceiling in minutes
+error_patterns:             # extra case-insensitive substrings → common-error
+  - my custom api error
+```
+
+After every agent run, foundation classifies the outcome from what it can
+observe — exit code, board ref movement, and the run's captured output:
+
+- **progress** — the board changed; keep draining.
+- **stall** — a task the agent claimed or left `in-progress` did not move. Its
+  attempt counter is bumped, and at `max_attempts` it is **auto-blocked** (a
+  `blocked:` reason is written so it drops out of the actionable set and the
+  drain can finish). The agent may always set a better reason itself with
+  `karr edit --block`; the auto-block is only a fallback so the loop always
+  terminates.
+- **common-error** — a non-zero/timeout exit, or output matching a known
+  pattern (rate limit, auth, network, 5xx, plus your `error_patterns`). No task
+  is penalized; the repo enters an **exponential cooldown** (`cooldown_base` ×
+  2^level minutes, capped at `cooldown_max`, reset on the next clean run) and is
+  skipped until it expires.
+- **idle** — the agent did nothing and grabbed nothing; stop.
+
+Concurrent invocations are safe: a PID lock per repo means a cron tick that
+fires while an agent is still running simply skips that repo. All per-repo state
+is gitignored: `.karr.state` (board hash, per-task attempts, cooldown, last
+error), `.karr.lock`, and `.karr.log`.
+
 ## Helper refs
 
 Not all shared workflow state belongs in tasks. `karr` also supports arbitrary
