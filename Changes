@@ -1,4 +1,4 @@
-{{$NEXT}}
+0.300     2026-05-27 20:43:23Z
 
     - Docker: bundle libgit2 (Alien::Libgit2 share build) so the runtime
       image is self-contained. Builder installs cmake/pkg-config/zlib/
