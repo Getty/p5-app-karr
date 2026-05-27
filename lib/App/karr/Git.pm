@@ -97,19 +97,8 @@ sub repo_root {
 sub _config_string {
     my ( $self, $key ) = @_;
     my $repo = $self->_repo or return '';
-    my $val = try {
-        my $cfg;
-        require Git::Libgit2::FFI;
-        Git::Libgit2::FFI::ffi();
-        # Snapshot — git_config_get_string refuses to run on a live config.
-        my $rc = Git::Libgit2::FFI::git_repository_config_snapshot( \$cfg, $repo->_handle );
-        return '' if $rc < 0;
-        my $out;
-        my $rc2 = Git::Libgit2::FFI::git_config_get_string( \$out, $cfg, $key );
-        Git::Libgit2::FFI::git_config_free($cfg);
-        return $rc2 < 0 ? '' : ( $out // '' );
-    } catch { '' };
-    return $val;
+    my $val = try { $repo->config_string($key) } catch { undef };
+    return defined $val ? $val : '';
 }
 
 sub git_user_email {
@@ -159,13 +148,9 @@ sub validate_helper_ref {
     die "Ref '$full_ref' is in a protected namespace\n"
         if $full_ref eq 'refs/stash' || index( $full_ref, 'refs/stash/' ) == 0;
 
-    # Native check: git_reference_name_is_valid.
-    require Git::Libgit2::FFI;
-    Git::Libgit2::FFI::ffi();
-    my $valid = 0;
-    my $rc = Git::Libgit2::FFI::git_reference_name_is_valid( \$valid, $full_ref );
+    # Native validity check via Git::Native.
     die "Ref '$full_ref' is not a valid git ref name\n"
-        if $rc < 0 || !$valid;
+        unless Git::Native->reference_name_is_valid($full_ref);
 
     return $full_ref;
 }
@@ -380,6 +365,21 @@ sub list_refs {
     # Glob to scope the iterator server-side.
     my $names = $repo->reference_names( glob => "$prefix*" );
     return @$names;
+}
+
+sub ref_oids {
+    my ( $self, $prefix ) = @_;
+    $prefix //= 'refs/karr/';
+    my $repo = $self->_repo or return undef;
+    my %oids;
+    for my $ref ( $self->list_refs($prefix) ) {
+        my $oid = try {
+            my $t = $repo->reference($ref)->target;
+            $t ? $t->hex : undef;
+        } catch { undef };
+        $oids{$ref} = $oid if defined $oid;
+    }
+    return \%oids;
 }
 
 sub read_config_ref {

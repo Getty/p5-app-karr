@@ -13,6 +13,7 @@ use Time::Piece;
 use POSIX qw( WNOHANG );
 use Digest::MD5 qw( md5_hex );
 use Try::Tiny;
+use App::karr::Git;
 
 option config => (
   is     => 'ro',
@@ -231,8 +232,11 @@ sub _sync_pull {
 
 sub _ref_hash {
   my ( $self, $repo ) = @_;
-  my $out = qx(git -C "$repo" for-each-ref refs/karr/ --format='%(objectname)' 2>/dev/null);
-  return undef if $?;
+  my $git = App::karr::Git->new( dir => "$repo" );
+  return undef unless $git->is_repo;
+  my $oids = $git->ref_oids('refs/karr/') or return undef;
+  # Deterministic fingerprint of refs/karr/* (ref name + target OID).
+  my $out = join '', map { "$_ $oids->{$_}\n" } sort keys %$oids;
   return md5_hex( $out );
 }
 
