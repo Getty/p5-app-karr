@@ -14,7 +14,7 @@ jobs:
     container:
       image: perl:${{ matrix.perl-version }}-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Fix safe.directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: perl -V
