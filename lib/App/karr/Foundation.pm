@@ -14,6 +14,7 @@ use POSIX qw( WNOHANG );
 use Digest::MD5 qw( md5_hex );
 use Try::Tiny;
 use App::karr::Git;
+use App::karr::BoardStore;
 
 option config => (
   is     => 'ro',
@@ -223,7 +224,9 @@ sub _sync_pull {
   my ( $self, $repo ) = @_;
   $self->_say_verbose("sync --pull $repo");
   return if $self->dry_run;
-  system( 'karr', '--dir', "$repo", 'sync', '--pull' );
+  my $git = App::karr::Git->new( dir => "$repo" );
+  return unless $git->is_repo;
+  $git->pull;
 }
 
 # ---------------------------------------------------------------------------
@@ -246,8 +249,15 @@ sub _ref_hash {
 
 sub _has_open_tasks {
   my ( $self, $repo ) = @_;
-  my $out = qx(karr --dir "$repo" list --status todo,in-progress --compact 2>/dev/null);
-  return length($out) > 0;
+  my $git = App::karr::Git->new( dir => "$repo" );
+  return 0 unless $git->is_repo;
+  my $store = App::karr::BoardStore->new( git => $git );
+  my %open = map { $_ => 1 } qw( todo in-progress );
+  for my $task ( $store->load_tasks ) {
+    next unless $task;
+    return 1 if $open{ $task->status // '' };
+  }
+  return 0;
 }
 
 # ---------------------------------------------------------------------------

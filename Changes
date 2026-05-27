@@ -5,7 +5,9 @@
       of poking Git::Libgit2::FFI directly. New Git.pm `ref_oids` helper.
     - karr-foundation: detect board changes via Git::Native instead of
       shelling out to `git for-each-ref` — no git binary needed for that
-      path anymore.
+      path anymore. Sync (`--pull`) and open-task detection now run
+      in-process via App::karr::Git/BoardStore instead of forking the
+      `karr` CLI.
     - cpanfile: require Git::Native 0.003 and Git::Libgit2 0.004.
     - Fix `karr context` / `karr context --json` crashing with
       "Can't locate object method 'strftime' via package 'Sun May ...'":
