@@ -8,6 +8,17 @@
       path anymore. Sync (`--pull`) and open-task detection now run
       in-process via App::karr::Git/BoardStore instead of forking the
       `karr` CLI.
+    - karr-foundation: drain each board instead of a single run — invoke
+      the agent command repeatedly until no actionable task (non-terminal
+      and unblocked) remains. A task the agent claims but never moves is
+      auto-blocked after `max_attempts` stalls (default 2) so the drain
+      always terminates; the agent's own `--block` reason still wins.
+      Observable common errors (non-zero/timeout exit, or a log match
+      against rate-limit/auth/network/5xx patterns, extensible via
+      `error_patterns`) never penalize a task and instead trigger an
+      exponential per-repo cooldown (1, 2, 4, … minutes, capped). New
+      `.karr` keys: `drain`, `max_attempts`, `max_iterations`,
+      `cooldown_base`, `cooldown_max`, `error_patterns`.
     - cpanfile: require Git::Native 0.003 and Git::Libgit2 0.004.
     - Fix `karr context` / `karr context --json` crashing with
       "Can't locate object method 'strftime' via package 'Sun May ...'":
