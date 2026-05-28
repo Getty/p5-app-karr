@@ -23,6 +23,12 @@ option config => (
   doc    => 'Path to config file (default: ~/.config/karr-foundation/config.yml)',
 );
 
+option command => (
+  is     => 'ro',
+  format => 's',
+  doc    => 'Global agent command; overrides .karr file per-repo',
+);
+
 option force => (
   is  => 'ro',
   doc => 'Run agent even if no board change detected and no open tasks',
@@ -171,6 +177,7 @@ sub _discover_repos {
   }
 
   # Scanned parent directories — check direct children for .karr file
+  # OR refs/karr/config (karr-init'd repo without .karr file)
   for my $scan_dir ( @{ $self->_config_data->{scan} // [] } ) {
     my $p = path( $scan_dir );
     unless ( $p->is_dir ) {
@@ -178,8 +185,13 @@ sub _discover_repos {
       next;
     }
     for my $child ( $p->children ) {
-      push @repos, $child
-        if $child->is_dir && $child->child('.karr')->exists;
+      next unless $child->is_dir;
+      # .karr file takes precedence; also detect karr-init'd repos
+      if ( $child->child('.karr')->exists ) {
+        push @repos, $child;
+      } elsif ( $child->child('.git/refs/karr/config')->exists ) {
+        push @repos, $child;
+      }
     }
   }
 
@@ -192,16 +204,30 @@ sub _discover_repos {
 
 sub _process_repo {
   my ( $self, $repo ) = @_;
-  my $dot_karr = $repo->child('.karr');
-  unless ( $dot_karr->exists ) {
-    $self->_say_verbose("skip $repo — no .karr file");
+
+  # Check if repo has karr board (either .karr file or karr refs)
+  my $has_karr = $repo->child('.karr')->exists
+              || $repo->child('.git/refs/karr/config')->exists;
+  unless ( $has_karr ) {
+    $self->_say_verbose("skip $repo — no karr board");
     return;
   }
 
   my $karr = $self->_load_karr( $repo );
-  unless ( defined $karr->{command} ) {
-    warn "karr-foundation: $repo/.karr has no 'command' key — skipping\n";
-    return;
+
+  # Priority: CLI --command > config default_command > .karr command
+  my $cmd = $self->command // $self->_config_data->{default_command} // $karr->{command};
+
+  if ( !defined $cmd || $cmd eq '' ) {
+    if ( $self->command ) {
+      warn "karr-foundation: --command provided but no default_command in config and no .karr file in $repo\n";
+    } elsif ( exists $karr->{command} ) {
+      # .karr file has command — use it (backwards compat)
+      $cmd = $karr->{command};
+    } else {
+      warn "karr-foundation: no command for $repo — set --command, default_command in config, or add command to .karr\n";
+      return;
+    }
   }
 
   # Check lock — skip if another instance is running
@@ -239,7 +265,7 @@ sub _process_repo {
   # Acquire lock, drain, release
   $self->_acquire_lock( $repo );
   my $result = try {
-    $self->_drain_repo( $repo, $karr );
+    $self->_drain_repo( $repo, $karr, $cmd );
   } catch {
     warn "karr-foundation: drain error in $repo: $_\n";
     { outcome => 'error', exit => 1 };
@@ -357,12 +383,15 @@ sub _stuck_tasks {
 # auto-blocking tasks the agent keeps failing on. Returns
 # { outcome => progress|idle|common-error|error, exit => N }.
 sub _drain_repo {
-  my ( $self, $repo, $karr ) = @_;
+  my ( $self, $repo, $karr, $cmd ) = @_;
   my $max_runtime  = $karr->{max_runtime}    // 1800;
   my $max_attempts = $karr->{max_attempts}   // 2;
   my $max_iter     = $karr->{max_iterations} // 50;
   my $drain        = exists $karr->{drain} ? $karr->{drain} : 1;
   my $patterns     = $self->_error_patterns( $karr );
+
+  # Use the resolved command, not $karr->{command}
+  $cmd //= $karr->{command};
 
   my $loop_start = time;
   my $last_exit  = 0;
@@ -381,7 +410,7 @@ sub _drain_repo {
     last if $iter >= $max_iter;
 
     my $hash_before = $self->_ref_hash( $repo ) // '';
-    my ( $exit, $output ) = $self->_run_command( $repo, $karr );
+    my ( $exit, $output ) = $self->_run_command( $repo, $karr, $cmd );
     $last_exit = $exit;
     $first     = 0;
     $iter++;
@@ -533,8 +562,8 @@ sub _clear_cooldown {
 # ---------------------------------------------------------------------------
 
 sub _run_command {
-  my ( $self, $repo, $karr ) = @_;
-  my $command     = $karr->{command};
+  my ( $self, $repo, $karr, $cmd ) = @_;
+  my $command     = $cmd // $karr->{command};
   my $max_runtime = $karr->{max_runtime} // 1800;
 
   # Env-var substitution in command string
