@@ -30,6 +30,10 @@
     - karr board: hide the `@claimed_by` badge and claimed-count for tasks in
       a terminal status (done/archived) — a claim is an active lease, and the
       history remains in the activity log.
+    - sync: surface the real libgit2 error on a failed pull/push instead of a
+      meaningless "(exit code $?)" (native libgit2 operations have no shell
+      exit code). New Git `last_error` accessor records the last remote-op
+      exception.
 
 0.300     2026-05-27 20:43:23Z
 

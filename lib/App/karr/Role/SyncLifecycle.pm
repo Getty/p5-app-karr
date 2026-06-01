@@ -42,7 +42,7 @@ sub sync_before {
             print STDERR "Pull successful.\n" if $attempt > 1;
             last;
         }
-        $err = "git pull failed (exit code $?)";
+        $err = "git pull failed: " . ( $git->last_error // 'unknown error' );
         print STDERR "  $err\n";
         sleep 1 if $attempt < 3;
     }
@@ -75,7 +75,7 @@ sub sync_after {
             print STDERR "Push successful.\n" if $attempt > 1;
             last;
         }
-        $err = "git push failed (exit code $?)";
+        $err = "git push failed: " . ( $git->last_error // 'unknown error' );
         print STDERR "  $err\n";
         sleep 1 if $attempt < 3;
     }

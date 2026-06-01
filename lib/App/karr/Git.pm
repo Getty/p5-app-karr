@@ -46,6 +46,14 @@ sub dir {
     return path( $self->{dir} );
 }
 
+# The libgit2 exception text from the most recent remote operation that failed
+# (fetch/push/pull). Native operations have no shell exit code, so callers
+# report this instead of $?.
+sub last_error {
+    my ($self) = @_;
+    return $self->{_last_error};
+}
+
 # ----- Native repository handle (lazy) -----
 
 sub _repo {
@@ -79,7 +87,7 @@ sub is_repo {
         # open_ext walks up to find a .git; throws on miss.
         Git::Native->open_ext( $self->dir->stringify );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
     return $ok;
 }
 
@@ -265,7 +273,7 @@ sub fetch {
             credentials => _default_credentials_cb(),
         );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
 }
 
 sub push {
@@ -282,7 +290,7 @@ sub push {
             prune       => 1,
         );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
 }
 
 sub pull {
@@ -297,7 +305,7 @@ sub pull {
             credentials => _default_credentials_cb(),
         );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
 }
 
 sub push_ref {
@@ -313,7 +321,7 @@ sub push_ref {
             credentials => _default_credentials_cb(),
         );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
 }
 
 sub pull_ref {
@@ -329,7 +337,7 @@ sub pull_ref {
             credentials => _default_credentials_cb(),
         );
         1;
-    } catch { 0 };
+    } catch { $self->{_last_error} = "$_"; 0 };
 }
 
 # ----- Task / config refs (sit on top of write_ref/read_ref) -----
