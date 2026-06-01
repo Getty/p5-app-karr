@@ -47,6 +47,19 @@ has config => (
     is => 'lazy',
 );
 
+has board_dir => (
+    is      => 'lazy',
+    builder => sub { $_[0]->git_root },
+);
+
+# Actor role for the activity log identity: 'user' (default) or 'agent'.
+# Carried to nested karr calls via the KARR_ROLE env var (foundation sets
+# 'agent'); a --role option on a command overrides this attribute.
+has role => (
+    is      => 'lazy',
+    builder => sub { $ENV{KARR_ROLE} || 'user' },
+);
+
 sub _build_git_root {
     my ($self) = @_;
     require App::karr::Git;

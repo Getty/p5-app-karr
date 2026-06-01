@@ -122,7 +122,7 @@ Important refs:
 - C<refs/karr/config> holds sparse YAML config overrides
 - C<refs/karr/meta/next-id> holds the next numeric task id
 - C<refs/karr/tasks/E<lt>idE<gt>/data> holds task Markdown plus frontmatter
-- C<refs/karr/log/E<lt>agentE<gt>> holds append-style JSON log lines
+- C<refs/karr/log/E<lt>roleE<gt>/E<lt>emailE<gt>> holds append-style JSON log lines, keyed by a role-qualified identity (role C<user> or C<agent>) so a human and an AI sharing one Git config stay distinct
 
 ## Command map
 
@@ -143,7 +143,7 @@ Important refs:
 |---------|------------|
 | `karr create` | create a task |
 | `karr list` | filter and search tasks |
-| `karr show` | inspect one task in full |
+| `karr show` | inspect one task in full (or `--me` / `--last N` / `--agent NAME` for recent) |
 | `karr edit` | update body, metadata, claim, or blocked state |
 | `karr move` | change status explicitly or with `--next` / `--prev` |
 | `karr archive` | soft-delete into `archived` |
@@ -187,6 +187,9 @@ karr handoff 1 --claim "$NAME" --note "Implementation complete" --timestamp
 
 # inspect activity trail
 karr log --agent "$NAME"
+
+# re-orient: the task I most recently acted on
+karr show --me
 ```
 
 `pick` respects blocked state, claim timeout, and class-of-service ordering:
@@ -198,11 +201,16 @@ karr log --agent "$NAME"
 
 ## Automated execution: karr-foundation
 
-`karr-foundation` is a single-shot, idempotent companion binary that drives
-agents across one or more boards. Point cron (or a systemd timer, or a tight
-loop) at it and it scans configured repos, decides whether there is work, and
-**drains** each board — running the configured agent command repeatedly until
-no actionable task remains.
+`karr-foundation` is a single-shot, idempotent companion binary — a multi-board
+**coordinator**. Point cron (or a systemd timer, or a tight loop) at it and it
+scans configured repos, decides whether there is work, and **drains** each
+board — running the configured agent command repeatedly until no actionable
+task remains.
+
+Agent execution is opt-in. When no board has an agent configured, the default
+action is a read-only **overview** of every board (status counts,
+in-progress/blocked tasks, lock and cooldown state) — so a human can use
+foundation purely to coordinate their own work, with no AI involved.
 
 ```bash
 # every 5 minutes
@@ -210,6 +218,7 @@ no actionable task remains.
 
 karr-foundation --force            # run regardless of board state
 karr-foundation --dry-run --verbose
+karr-foundation --status           # read-only overview of every board, no runs
 ```
 
 It reads `~/.config/karr-foundation/config.yml` (or `--config`):
@@ -224,17 +233,28 @@ scan:
 Each repo carries a `.karr` file describing how to run its agent:
 
 ```yaml
-command: claude -p "Use karr-coordinator agent, pick next task"
+claude: true                # synthesize the canonical claude command (opt-in)
+claude_bin: claude          # binary for claude: true (default: claude)
+claude_max_turns: 30        # --max-turns for claude: true
+claude_permission_mode: bypassPermissions
+prompt: >-                  # agent instruction, exposed to the command as $PROMPT
+  Use the karr-coordinator skill: pick the next actionable task and move it.
+# command: claude -p "$PROMPT"   # explicit command; wins over claude: true
 on_idle: skip               # 'skip' (default) | 'always-run'
-max_runtime: 1800           # per-command SIGKILL + total drain budget (seconds)
+max_runtime: 1800           # per-command SIGKILL in seconds (0 = no timeout)
 drain: true                 # loop until drained (default) | false: single run
 max_attempts: 2             # stalls on one task before auto-block
-max_iterations: 50          # hard cap on drain iterations
+max_iterations: 50          # hard cap on drain iterations (the drain budget)
 cooldown_base: 1            # cooldown minutes at level 0
 cooldown_max: 64            # cooldown ceiling in minutes
 error_patterns:             # extra case-insensitive substrings → common-error
   - my custom api error
 ```
+
+`claude`, `claude_bin`, the `claude_*` knobs, `command` and `prompt` may also be
+set globally in `config.yml` (as `default_command` / `default_prompt`); the
+per-repo `.karr` value wins. The agent's output streams to the terminal when run
+interactively or with `--verbose`, and is always appended to `.karr.log`.
 
 After every agent run, foundation classifies the outcome from what it can
 observe — exit code, board ref movement, and the run's captured output:

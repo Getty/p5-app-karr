@@ -48,12 +48,16 @@ sub parse_ids {
     return split /,/, $id_str;
 }
 
-sub append_log {
-    my ($self, $git, %entry) = @_;
+sub activity_log {
+    my ($self, $git) = @_;
     $git //= $self->git;
     require App::karr::ActivityLog;
-    my $logger = App::karr::ActivityLog->new(git => $git);
-    return $logger->log_entry(%entry);
+    return App::karr::ActivityLog->new(git => $git, role => $self->role);
+}
+
+sub append_log {
+    my ($self, $git, %entry) = @_;
+    return $self->activity_log($git)->log_entry(%entry);
 }
 
 sub save_config {
